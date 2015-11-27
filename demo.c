@@ -29,6 +29,7 @@ struct _GdRowWidget
 
   GtkWidget *label1;
   GtkWidget *label2;
+  GtkWidget *button;
 };
 
 typedef struct _GdRowWidget GdRowWidget;
@@ -46,14 +47,17 @@ static void gd_row_widget_init (GdRowWidget *d)
 
   d->label1 = gtk_label_new ("");
   d->label2 = gtk_label_new ("");
+  d->button = gtk_button_new_with_label ("Click Me");
 
   gtk_label_set_ellipsize (GTK_LABEL (d->label2), TRUE);
 
   gtk_container_add (GTK_CONTAINER (d), d->label1);
   gtk_container_add (GTK_CONTAINER (d), d->label2);
+  gtk_container_add (GTK_CONTAINER (d), d->button);
 
   gtk_widget_show (d->label1);
   gtk_widget_show (d->label2);
+  gtk_widget_show (d->button);
 }
 static void gd_row_widget_class_init (GdRowWidgetClass *dc) {}
 /* }}} */
@@ -64,7 +68,10 @@ GtkSizeGroup *size_group2;
 
 
 GtkWidget *
-fill_func (gpointer item, GtkWidget *old_widget, gpointer user_data)
+fill_func (gpointer   item,
+           GtkWidget *old_widget,
+           guint      item_index,
+           gpointer   user_data)
 {
   GdRowWidget *row;
   GtkWidget *label1, *label2;
@@ -88,6 +95,11 @@ fill_func (gpointer item, GtkWidget *old_widget, gpointer user_data)
   label = g_strdup_printf ("Row %u of %u", data->index, data->model_size);
   gtk_label_set_label (GTK_LABEL (row->label1), label);
   gtk_label_set_label (GTK_LABEL (row->label2), data->text);
+
+  if (item_index == 0)
+    gtk_widget_set_margin_top (GTK_WIDGET (row), 0);
+  else
+    gtk_widget_set_margin_top (GTK_WIDGET (row), 12);
 
   g_free (label);
 

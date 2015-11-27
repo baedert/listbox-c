@@ -4,10 +4,10 @@ AM_INIT_AUTOMAKE([foreign])
 
 AC_PROG_CC
 LT_INIT
-AC_CONFIG_MACRO_DIRS([libgd])
 
 PKG_CHECK_MODULES(LISTBOX, gtk+-3.0)
 
+CFLAGS+=" -g -O0"
 
 AC_CONFIG_FILES([
   Makefile

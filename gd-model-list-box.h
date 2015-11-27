@@ -27,6 +27,7 @@ GListModel *gd_model_list_box_get_model (GdModelListBox *box);
 
 typedef GtkWidget * (*GdModelListBoxFillFunc) (gpointer  item,
                                                GtkWidget *widget,
+                                               guint      item_index,
                                                gpointer   user_data);
 
 
