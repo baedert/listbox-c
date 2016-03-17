@@ -27,6 +27,7 @@ struct _GdModelListBoxPrivate
   GPtrArray *pool;
   GdkWindow *bin_window;
 
+  GdModelListBoxWidgetRemoveFunc remove_func;
   GdModelListBoxFillFunc fill_func;
   gpointer fill_func_data;
   GListModel *model;
@@ -47,7 +48,7 @@ G_DEFINE_TYPE_WITH_CODE (GdModelListBox, gd_model_list_box, GTK_TYPE_CONTAINER,
 #define PRIV_DECL(l) GdModelListBoxPrivate *priv = ((GdModelListBoxPrivate *)gd_model_list_box_get_instance_private ((GdModelListBox *)l))
 #define PRIV(l) ((GdModelListBoxPrivate *)gd_model_list_box_get_instance_private ((GdModelListBox *)l))
 
-#define Foreach_Row {int i; for (i = 0; i < priv->widgets->len; i ++){ \
+#define Foreach_Row {guint i; for (i = 0; i < priv->widgets->len; i ++){ \
                        GtkWidget *row = g_ptr_array_index (priv->widgets, i);
 
 
@@ -105,6 +106,9 @@ remove_child_internal (GdModelListBox *box, GtkWidget *widget)
 
   g_object_unref (widget);
 
+  if (priv->remove_func)
+    priv->remove_func (widget);
+
   gtk_widget_unparent (widget);
   g_ptr_array_remove (priv->widgets, widget);
   g_ptr_array_add (priv->pool, widget);
@@ -116,7 +120,7 @@ position_children (GdModelListBox *box)
   GtkAllocation alloc;
   GtkAllocation child_alloc;
   PRIV_DECL (box);
-  int i, y, foo;
+  int y, foo;
 
   gtk_widget_get_allocation (GTK_WIDGET (box), &alloc);
 
@@ -141,20 +145,20 @@ position_children (GdModelListBox *box)
 static inline int
 row_height (GdModelListBox *box, GtkWidget *w)
 {
-  PRIV_DECL (box);
   int min, nat;
   gtk_widget_get_preferred_height_for_width (w,
                                              gtk_widget_get_allocated_width (GTK_WIDGET (box)),
                                              &min, &nat);
 
   return min;
+  /*return nat;*/
 }
 
 static inline int
 row_y (GdModelListBox *box, guint index)
 {
   int y = 0;
-  int i;
+  guint i;
   PRIV_DECL (box);
 
   for (i = 0; i < index; i ++)
@@ -167,7 +171,6 @@ static int
 estimated_widget_height (GdModelListBox *box)
 {
   int avg_widget_height = 0;
-  int i;
   PRIV_DECL (box);
 
   Foreach_Row
@@ -370,8 +373,6 @@ ensure_visible_widgets (GdModelListBox *box)
           priv->bin_y_diff = top_widget_index * avg_widget_height;
         }
 
-        g_assert (priv->model_from >= 0);
-        g_assert (priv->model_to >= 0);
         g_assert (priv->model_from <= g_list_model_get_n_items (priv->model));
         g_assert (priv->model_to <= g_list_model_get_n_items (priv->model));
         g_assert (bin_y (box) <= widget_height);
@@ -380,7 +381,7 @@ ensure_visible_widgets (GdModelListBox *box)
 
   /* Remove top widgets */
   {
-    int i;
+    guint i;
     top_removed = FALSE;
 
     for (i = 0; i < priv->widgets->len; i ++)
@@ -427,6 +428,7 @@ ensure_visible_widgets (GdModelListBox *box)
     for (; i >= 0; i --)
       {
         GtkWidget *w = g_ptr_array_index (priv->widgets, i);
+        g_assert (w);
         int y = bin_y (box) + row_y (box, i);
 
         /*g_message ("%d: %d + %d > %d", i, bin_y (box), row_y (box, i), widget_height);*/
@@ -477,8 +479,8 @@ ensure_visible_widgets (GdModelListBox *box)
   {
     double new_upper;
     guint top_part, bottom_part;
-    gboolean widgets_changed = top_removed    || top_added ||
-                               bottom_removed || bottom_added;
+    /*gboolean widgets_changed = top_removed    || top_added ||*/
+                               /*bottom_removed || bottom_added;*/
     int bin_window_y = bin_y (box);
 
 
@@ -560,7 +562,7 @@ __add (GtkContainer *container, GtkWidget *child)
 static void
 __remove (GtkContainer *container, GtkWidget *child)
 {
-  PRIV_DECL (container);
+  /*PRIV_DECL (container);*/
   g_assert (gtk_widget_get_parent (child) == GTK_WIDGET (container));
   /*g_assert (gtk_widget_get_parent_window (child) == priv->bin_window); XXX ??? */
 }
@@ -583,7 +585,7 @@ __forall (GtkContainer *container,
 static void
 __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
 {
-  PRIV_DECL(widget);
+  /*PRIV_DECL(widget);*/
   gboolean height_changed = allocation->height != gtk_widget_get_allocated_height (widget);
 
   gtk_widget_set_allocation (widget, allocation);
@@ -612,7 +614,6 @@ __draw (GtkWidget *widget, cairo_t *ct)
 {
   GtkAllocation alloc;
   GtkStyleContext *context;
-  int i;
   PRIV_DECL (widget);
 
   context = gtk_widget_get_style_context (widget);
@@ -637,7 +638,6 @@ __realize (GtkWidget *widget)
   GtkAllocation  allocation;
   GdkWindowAttr  attributes = { 0, };
   GdkWindow     *window;
-  int            i;
 
   gtk_widget_get_allocation (widget, &allocation);
   gtk_widget_set_realized (widget, TRUE);
@@ -774,6 +774,13 @@ gd_model_list_box_set_fill_func (GdModelListBox *box,
 {
   PRIV (box)->fill_func = func;
   PRIV (box)->fill_func_data = user_data;
+}
+
+void
+gd_model_list_box_set_widget_remove_func (GdModelListBox *box,
+                                          GdModelListBoxWidgetRemoveFunc func)
+{
+  PRIV (box)->remove_func = func;
 }
 
 void
