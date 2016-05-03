@@ -77,7 +77,7 @@ fill_func (gpointer   item,
   GdData *data = GD_DATA (item);
   gchar *label;
 
-  if (!old_widget)
+  if (G_UNLIKELY (!old_widget))
     {
       row = GD_ROW_WIDGET (gd_row_widget_new ());
       gtk_widget_show (GTK_WIDGET (row));
@@ -122,7 +122,7 @@ main (int argc, char **argv)
     {
       GdData *d = g_object_new (GD_TYPE_DATA, NULL);
       d->model_size = model_size;
-      d->index = (guint)i;
+      d->index = i;
       d->text = "fpoobar'lsfasdf asdf asdfas df asd fasd f asdf as dfewrthuier htuiheasruig hdrhfughseduig hisdfiugsdhiugisdf";
       g_list_store_append (store, d);
     }
