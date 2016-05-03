@@ -8,7 +8,7 @@ LT_INIT
 
 PKG_CHECK_MODULES(LISTBOX, gtk+-3.0)
 
-CFLAGS+=" -g -O0"
+CFLAGS+=" -g -O0 -fno-omit-frame-pointer -Wextra"
 
 AC_CONFIG_FILES([
   Makefile

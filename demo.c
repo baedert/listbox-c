@@ -94,11 +94,7 @@ fill_func (gpointer   item,
   label = g_strdup_printf ("Row %u of %u", data->index, data->model_size);
   gtk_label_set_label (GTK_LABEL (row->label1), label);
   gtk_label_set_label (GTK_LABEL (row->label2), data->text);
-
-  /*if (item_index == 0)*/
-    /*gtk_widget_set_margin_top (GTK_WIDGET (row), 0);*/
-  /*else*/
-    gtk_widget_set_margin_top (GTK_WIDGET (row), 12);
+  gtk_widget_set_margin_top (GTK_WIDGET (row), 12);
 
   g_free (label);
 
@@ -121,7 +117,7 @@ main (int argc, char **argv)
   size_group2 = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
 
   GListStore *store = g_list_store_new (GD_TYPE_DATA);
-  model_size = 150000;
+  model_size = 1500000;
   for (i = 0; i < model_size; i ++)
     {
       GdData *d = g_object_new (GD_TYPE_DATA, NULL);

@@ -93,8 +93,11 @@ insert_child_internal (GdModelListBox *box, GtkWidget *widget, guint index)
 
   g_object_ref (widget);
 
-  gtk_widget_set_parent_window (widget, priv->bin_window);
-  gtk_widget_set_parent (widget, GTK_WIDGET (box));
+  if (G_UNLIKELY (gtk_widget_get_parent (widget) != GTK_WIDGET (box)))
+    {
+      gtk_widget_set_parent_window (widget, priv->bin_window);
+      gtk_widget_set_parent (widget, GTK_WIDGET (box));
+    }
 
   g_ptr_array_insert (priv->widgets, index, widget);
 }
@@ -129,7 +132,7 @@ remove_child_by_index (GdModelListBox *box, guint index)
   if (priv->remove_func)
     priv->remove_func (row);
 
-  gtk_widget_unparent (row);
+  /*gtk_widget_unparent (row);*/
   g_ptr_array_remove_index_fast (priv->widgets, index);
   g_ptr_array_add (priv->pool, row);
 
@@ -600,6 +603,13 @@ __forall (GtkContainer *container,
   Foreach_Row
     (*callback)(row, callback_data);
   }}
+
+  if (include_internals)
+    {
+      guint i;
+      for (i = 0; i < priv->pool->len; i ++)
+        (*callback)(g_ptr_array_index (priv->pool, i), callback_data);
+    }
 }
 /* }}} */
 
@@ -607,7 +617,6 @@ __forall (GtkContainer *container,
 static void
 __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
 {
-  /*PRIV_DECL(widget);*/
   gboolean height_changed = allocation->height != gtk_widget_get_allocated_height (widget);
 
   gtk_widget_set_allocation (widget, allocation);
@@ -725,8 +734,6 @@ __get_preferred_width (GtkWidget *widget, int *min, int *nat)
     min_width = MAX (min_width, m);
     nat_width = MAX (nat_width, n);
   }}
-
-  g_message ("Min reported width: %d", min_width);
 
   *min = min_width;
   *nat = nat_width;
@@ -883,8 +890,8 @@ gd_model_list_box_init (GdModelListBox *box)
   PRIV_DECL (box);
   GtkStyleContext *context = gtk_widget_get_style_context (GTK_WIDGET (box));
 
-  priv->widgets = g_ptr_array_new ();
-  priv->pool = g_ptr_array_new ();
+  priv->widgets    = g_ptr_array_new ();
+  priv->pool       = g_ptr_array_new ();
   priv->model_from = 0;
   priv->model_to   = 0;
   priv->bin_y_diff = 0;
