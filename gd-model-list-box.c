@@ -102,23 +102,6 @@ insert_child_internal (GdModelListBox *box, GtkWidget *widget, guint index)
   g_ptr_array_insert (priv->widgets, index, widget);
 }
 
-#if 0
-static void
-remove_child_internal (GdModelListBox *box, GtkWidget *widget)
-{
-  PRIV_DECL (box);
-
-  g_object_unref (widget);
-
-  if (priv->remove_func)
-    priv->remove_func (widget);
-
-  gtk_widget_unparent (widget);
-  g_ptr_array_remove (priv->widgets, widget);
-  g_ptr_array_add (priv->pool, widget);
-}
-#endif
-
 static void
 remove_child_by_index (GdModelListBox *box, guint index)
 {
@@ -132,8 +115,8 @@ remove_child_by_index (GdModelListBox *box, guint index)
   if (priv->remove_func)
     priv->remove_func (row);
 
-  /*gtk_widget_unparent (row);*/
-  g_ptr_array_remove_index_fast (priv->widgets, index);
+  /* Can't use _fast for priv->widgets, we need to keep the order. */
+  g_ptr_array_remove_index (priv->widgets, index);
   g_ptr_array_add (priv->pool, row);
 
 }
@@ -415,13 +398,17 @@ ensure_visible_widgets (GdModelListBox *box)
         int w_height = row_height (box, w);
         if (bin_y (box) + row_y (box, i) + w_height < 0)
           {
-            /*g_message ("Removing top widget %d", i);*/
+            g_assert_cmpint (i, ==, 0);
             priv->bin_y_diff += w_height;
             bin_height -= w_height;
             remove_child_by_index (box, i);
             priv->model_from ++;
             top_removed = TRUE;
-          }
+
+            /* Do the first row again */
+            i--;
+          } else
+            break;
       }
   }
 
@@ -465,6 +452,7 @@ ensure_visible_widgets (GdModelListBox *box)
             bin_height -= w_height;
             priv->model_to --;
             bottom_removed = TRUE;
+            i--;
           }
         else
           break;
@@ -540,6 +528,7 @@ ensure_visible_widgets (GdModelListBox *box)
   configure_adjustment (box);
 
   gtk_widget_queue_draw (widget);
+
 }
 
 static void
@@ -604,6 +593,7 @@ __forall (GtkContainer *container,
     (*callback)(row, callback_data);
   }}
 
+return;
   if (include_internals)
     {
       guint i;
@@ -891,7 +881,7 @@ gd_model_list_box_init (GdModelListBox *box)
 {
   PRIV_DECL (box);
 
-  priv->widgets    = g_ptr_array_new ();
+  priv->widgets    = g_ptr_array_sized_new (20);
   priv->pool       = g_ptr_array_new ();
   priv->model_from = 0;
   priv->model_to   = 0;
