@@ -63,10 +63,10 @@ enum {
 static GtkWidget *
 get_widget (GdModelListBox *box, guint index)
 {
+  PRIV_DECL (box);
   gpointer item;
   GtkWidget *old_widget = NULL;
   GtkWidget *new_widget;
-  PRIV_DECL (box);
 
   item = g_list_model_get_item (priv->model, index);
 
@@ -99,6 +99,7 @@ insert_child_internal (GdModelListBox *box, GtkWidget *widget, guint index)
   g_ptr_array_insert (priv->widgets, index, widget);
 }
 
+#if 0
 static void
 remove_child_internal (GdModelListBox *box, GtkWidget *widget)
 {
@@ -112,6 +113,26 @@ remove_child_internal (GdModelListBox *box, GtkWidget *widget)
   gtk_widget_unparent (widget);
   g_ptr_array_remove (priv->widgets, widget);
   g_ptr_array_add (priv->pool, widget);
+}
+#endif
+
+static void
+remove_child_by_index (GdModelListBox *box, guint index)
+{
+  PRIV_DECL (box);
+  GtkWidget *row;
+
+  row = g_ptr_array_index (priv->widgets, index);
+
+  g_object_unref (row);
+
+  if (priv->remove_func)
+    priv->remove_func (row);
+
+  gtk_widget_unparent (row);
+  g_ptr_array_remove_index_fast (priv->widgets, index);
+  g_ptr_array_add (priv->pool, row);
+
 }
 
 static void
@@ -150,8 +171,8 @@ row_height (GdModelListBox *box, GtkWidget *w)
                                              gtk_widget_get_allocated_width (GTK_WIDGET (box)),
                                              &min, &nat);
 
-  return min;
-  /*return nat;*/
+  /*return min;*/
+  return nat;
 }
 
 static inline int
@@ -348,7 +369,8 @@ ensure_visible_widgets (GdModelListBox *box)
       /*g_message ("OUT OF SIGHT");*/
 
       for (i = priv->widgets->len - 1; i >= 0; i --)
-        remove_child_internal (box, g_ptr_array_index (priv->widgets, i));
+        remove_child_by_index (box, i);
+
       bin_height = 0; /* The window is empty now, obviously */
 
       g_assert (priv->widgets->len == 0);
@@ -393,7 +415,7 @@ ensure_visible_widgets (GdModelListBox *box)
             /*g_message ("Removing top widget %d", i);*/
             priv->bin_y_diff += w_height;
             bin_height -= w_height;
-            remove_child_internal (box, w);
+            remove_child_by_index (box, i);
             priv->model_from ++;
             top_removed = TRUE;
           }
@@ -436,7 +458,7 @@ ensure_visible_widgets (GdModelListBox *box)
           {
             /*g_message ("Removing widget %d", i);*/
             int w_height = row_height (box, w);
-            remove_child_internal (box, w);
+            remove_child_by_index (box, i);
             bin_height -= w_height;
             priv->model_to --;
             bottom_removed = TRUE;
@@ -545,7 +567,7 @@ items_changed_cb (GListModel *model,
 
   /* Empty the current view */
   for (i = priv->widgets->len - 1; i >= 0; i --)
-    remove_child_internal (box, g_ptr_array_index (priv->widgets, i));
+    remove_child_by_index (box, i);
 
   priv->model_to = priv->model_from;
   update_bin_window (box);
@@ -693,8 +715,21 @@ __map (GtkWidget *widget)
 static void
 __get_preferred_width (GtkWidget *widget, int *min, int *nat)
 {
-  *min = 0;
-  *nat = 0;
+  PRIV_DECL (widget);
+  int min_width = 0;
+  int nat_width = 0;
+
+  Foreach_Row
+    int m, n;
+    gtk_widget_get_preferred_width (row, &m, &n);
+    min_width = MAX (min_width, m);
+    nat_width = MAX (nat_width, n);
+  }}
+
+  g_message ("Min reported width: %d", min_width);
+
+  *min = min_width;
+  *nat = nat_width;
 }
 
 static void

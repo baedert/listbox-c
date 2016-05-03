@@ -121,7 +121,7 @@ main (int argc, char **argv)
   size_group2 = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
 
   GListStore *store = g_list_store_new (GD_TYPE_DATA);
-  model_size = 15;
+  model_size = 150000;
   for (i = 0; i < model_size; i ++)
     {
       GdData *d = g_object_new (GD_TYPE_DATA, NULL);
