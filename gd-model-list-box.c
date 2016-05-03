@@ -882,19 +882,18 @@ gd_model_list_box_class_init (GdModelListBoxClass *class)
   g_object_class_override_property (object_class, PROP_VADJUSTMENT,    "vadjustment");
   g_object_class_override_property (object_class, PROP_HSCROLL_POLICY, "hscroll-policy");
   g_object_class_override_property (object_class, PROP_VSCROLL_POLICY, "vscroll-policy");
+
+  gtk_widget_class_set_css_name (widget_class, "list");
 }
 
 static void
 gd_model_list_box_init (GdModelListBox *box)
 {
   PRIV_DECL (box);
-  GtkStyleContext *context = gtk_widget_get_style_context (GTK_WIDGET (box));
 
   priv->widgets    = g_ptr_array_new ();
   priv->pool       = g_ptr_array_new ();
   priv->model_from = 0;
   priv->model_to   = 0;
   priv->bin_y_diff = 0;
-
-  gtk_style_context_add_class (context, "list");
 }
