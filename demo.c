@@ -88,11 +88,12 @@ static void gd_row_widget_class_init (GdRowWidgetClass *dc)
 GtkSizeGroup *size_group1;
 GtkSizeGroup *size_group2;
 
+const guint N = 20;
+
 
 static void
 switch_activated_cb (GtkSwitch *sw, GParamSpec *spec, gpointer user_data)
 {
-  /*GdRowWidget *row = user_data;*/
   GdData *data = user_data;
 
   data->on = gtk_switch_get_active (sw);
@@ -130,11 +131,11 @@ fill_func (gpointer   item,
       row = GD_ROW_WIDGET (old_widget);
     }
 
-#if 0
-  if (item_index% 2 == 0)
-    gtk_widget_set_size_request (GTK_WIDGET (row), -1, 200);
+#if 1
+  if (item_index < N/2)
+    gtk_widget_set_size_request (GTK_WIDGET (row), -1, 0);
   else
-    gtk_widget_set_size_request (GTK_WIDGET (row), -1, 10);
+    gtk_widget_set_size_request (GTK_WIDGET (row), -1, 200);
 #endif
 
 
@@ -142,7 +143,7 @@ fill_func (gpointer   item,
   gtk_label_set_label (GTK_LABEL (row->label1), label);
   gtk_label_set_markup (GTK_LABEL (row->label2), data->text);
   gtk_switch_set_active (GTK_SWITCH (row->_switch), data->on);
-  gtk_widget_set_margin_top (GTK_WIDGET (row), MIN (200, item_index * 4));
+  /*gtk_widget_set_margin_top (GTK_WIDGET (row), MIN (200, item_index * 4));*/
 
   g_signal_connect (G_OBJECT (row->_switch), "notify::active", G_CALLBACK (switch_activated_cb), item);
 
@@ -156,7 +157,6 @@ int
 main (int argc, char **argv)
 {
   guint i;
-  guint model_size;
   gtk_init (&argc, &argv);
 
   GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -169,11 +169,10 @@ main (int argc, char **argv)
   size_group2 = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
 
   GListStore *store = g_list_store_new (GD_TYPE_DATA);
-  model_size = 40;
-  for (i = 0; i < model_size; i ++)
+  for (i = 0; i < N; i ++)
     {
       GdData *d = g_object_new (GD_TYPE_DATA, NULL);
-      d->model_size = model_size;
+      d->model_size = N;
       d->text = "fpoobar'lsfasdf asdf <a href=\"foobar\">BLA BLA</a>asdfas df asd fasd f asdf as dfewrthuier htuiheasruig hdrhfughseduig hisdfiugsdhiugis<a href=\"foobar2\">BLA BLA 2</a>df";
       d->on = FALSE;
       g_list_store_append (store, d);

@@ -658,7 +658,7 @@ __draw (GtkWidget *widget, cairo_t *ct)
         }
       else
         {
-          /* TODO: Draw placeholder */
+           /* TODO: Draw placeholder */
         }
     }
 
