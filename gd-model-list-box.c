@@ -26,10 +26,12 @@ struct _GdModelListBoxPrivate
   GPtrArray *widgets;
   GPtrArray *pool;
   GdkWindow *bin_window;
+  GtkWidget *placeholder;
 
-  GdModelListBoxWidgetRemoveFunc remove_func;
+  GdModelListBoxRemoveFunc remove_func;
   GdModelListBoxFillFunc fill_func;
   gpointer fill_func_data;
+  gpointer remove_func_data;
   GListModel *model;
 
   guint model_from;
@@ -44,7 +46,6 @@ G_DEFINE_TYPE_WITH_CODE (GdModelListBox, gd_model_list_box, GTK_TYPE_CONTAINER,
                          G_ADD_PRIVATE (GdModelListBox)
                          G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, NULL));
 
-#define LIST(l) GD_MODEL_LIST_BOX(l)
 #define PRIV_DECL(l) GdModelListBoxPrivate *priv = ((GdModelListBoxPrivate *)gd_model_list_box_get_instance_private ((GdModelListBox *)l))
 #define PRIV(l) ((GdModelListBoxPrivate *)gd_model_list_box_get_instance_private ((GdModelListBox *)l))
 
@@ -113,7 +114,10 @@ remove_child_by_index (GdModelListBox *box, guint index)
   g_object_unref (row);
 
   if (priv->remove_func)
-    priv->remove_func (row);
+    {
+      guint item_index = priv->model_from + index;
+      priv->remove_func (row, g_list_model_get_item (priv->model, item_index));
+    }
 
   /* Can't use _fast for priv->widgets, we need to keep the order. */
   g_ptr_array_remove_index (priv->widgets, index);
@@ -643,11 +647,20 @@ __draw (GtkWidget *widget, cairo_t *ct)
   gtk_render_background (context, ct, 0, 0, alloc.width, alloc.height);
 
   if (gtk_cairo_should_draw_window (ct, priv->bin_window))
-    Foreach_Row
-      gtk_container_propagate_draw (GTK_CONTAINER (widget),
-                                    row,
-                                    ct);
-    }}
+    {
+      if (g_list_model_get_n_items (priv->model) > 0)
+        {
+          Foreach_Row
+            gtk_container_propagate_draw (GTK_CONTAINER (widget),
+                                          row,
+                                          ct);
+          }}
+        }
+      else
+        {
+          /* TODO: Draw placeholder */
+        }
+    }
 
   return GDK_EVENT_PROPAGATE;
 }
@@ -788,6 +801,7 @@ __finalize (GObject *obj)
 
   g_ptr_array_free (priv->pool, TRUE);
   g_ptr_array_free (priv->widgets, TRUE);
+  g_clear_object (&priv->placeholder);
 
   G_OBJECT_CLASS (gd_model_list_box_parent_class)->finalize (obj);
 }
@@ -800,19 +814,22 @@ gd_model_list_box_new (void)
 }
 
 void
-gd_model_list_box_set_fill_func (GdModelListBox *box,
-                                 GdModelListBoxFillFunc func,
-                                 gpointer               user_data)
+gd_model_list_box_set_fill_func (GdModelListBox         *box,
+                                 GdModelListBoxFillFunc  func,
+                                 gpointer                user_data)
 {
   PRIV (box)->fill_func = func;
   PRIV (box)->fill_func_data = user_data;
 }
 
 void
-gd_model_list_box_set_widget_remove_func (GdModelListBox *box,
-                                          GdModelListBoxWidgetRemoveFunc func)
+gd_model_list_box_set_remove_func (GdModelListBox           *box,
+                                   GdModelListBoxRemoveFunc  func,
+                                   gpointer                  user_data)
+
 {
   PRIV (box)->remove_func = func;
+  PRIV (box)->remove_func_data = user_data;
 }
 
 void
@@ -837,6 +854,17 @@ gd_model_list_box_set_model (GdModelListBox *box,
   ensure_visible_widgets (box);
 
   gtk_widget_queue_resize (GTK_WIDGET (box));
+}
+
+void
+gd_model_list_box_set_placeholder (GdModelListBox *box, GtkWidget *placeholder)
+{
+  PRIV_DECL (box);
+
+  g_return_if_fail (GD_IS_MODEL_LIST_BOX (box));
+  g_return_if_fail (GTK_IS_WIDGET (placeholder));
+
+  priv->placeholder = placeholder;
 }
 
 GListModel *

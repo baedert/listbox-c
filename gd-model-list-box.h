@@ -30,7 +30,8 @@ typedef GtkWidget * (*GdModelListBoxFillFunc) (gpointer  item,
                                                guint      item_index,
                                                gpointer   user_data);
 
-typedef void (*GdModelListBoxWidgetRemoveFunc) (GtkWidget *widget);
+typedef void (*GdModelListBoxRemoveFunc) (GtkWidget *widget,
+                                          gpointer   item);
 
 
 
@@ -38,6 +39,9 @@ void gd_model_list_box_set_fill_func (GdModelListBox         *box,
                                       GdModelListBoxFillFunc  func,
                                       gpointer                user_data);
 
-void gd_model_list_box_set_widget_remove_func (GdModelListBox *box,
-                                               GdModelListBoxWidgetRemoveFunc func);
+void gd_model_list_box_set_remove_func (GdModelListBox            *box,
+                                        GdModelListBoxRemoveFunc  func,
+                                        gpointer                  user_data);
+
+void gd_model_list_box_set_placeholder (GdModelListBox *box, GtkWidget *placeholder);
 #endif

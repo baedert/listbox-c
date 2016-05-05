@@ -8,6 +8,7 @@ struct _GdData
 
   guint model_size;
   const gchar *text;
+  gboolean on;
 };
 
 typedef struct _GdData GdData;
@@ -20,7 +21,6 @@ static void gd_data_init (GdData *d) {}
 static void gd_data_class_init (GdDataClass *dc) {}
 /* }}} */
 
-
 /* Test Row widget {{{ */
 struct _GdRowWidget
 {
@@ -29,6 +29,10 @@ struct _GdRowWidget
   GtkWidget *label1;
   GtkWidget *label2;
   GtkWidget *button;
+  GtkWidget *_switch;
+  GtkWidget *entry;
+  GtkWidget *scale;
+  GtkWidget *stack;
 };
 
 typedef struct _GdRowWidget GdRowWidget;
@@ -49,19 +53,30 @@ static void gd_row_widget_init (GdRowWidget *d)
   d->label1 = gtk_label_new ("");
   d->label2 = gtk_label_new ("");
   d->button = gtk_button_new_with_label ("Click Me");
+  d->_switch = gtk_switch_new ();
+  d->entry = gtk_entry_new ();
+  d->scale = gtk_scale_new (GTK_ORIENTATION_HORIZONTAL, NULL);
+  d->stack = gtk_stack_new ();
 
   gtk_label_set_ellipsize (GTK_LABEL (d->label2), PANGO_ELLIPSIZE_END);
   gtk_widget_set_hexpand (d->label2, TRUE);
   gtk_widget_set_halign (d->label2, GTK_ALIGN_START);
   gtk_label_set_xalign (GTK_LABEL (d->label2), 0.0);
+  gtk_widget_set_valign (d->_switch, GTK_ALIGN_CENTER);
+  gtk_widget_set_halign (d->_switch, GTK_ALIGN_CENTER);
+  gtk_widget_set_valign (d->entry, GTK_ALIGN_CENTER);
+
+
+  gtk_container_add (GTK_CONTAINER (d->stack), d->_switch);
+  gtk_container_add (GTK_CONTAINER (d->stack), d->scale);
+  gtk_container_add (GTK_CONTAINER (d->stack), d->entry);
 
   gtk_container_add (GTK_CONTAINER (d), d->label1);
   gtk_container_add (GTK_CONTAINER (d), d->label2);
   gtk_container_add (GTK_CONTAINER (d), d->button);
+  gtk_container_add (GTK_CONTAINER (d), d->stack);
 
-  gtk_widget_show (d->label1);
-  gtk_widget_show (d->label2);
-  gtk_widget_show (d->button);
+  gtk_widget_show_all (GTK_WIDGET (d));
 }
 static void gd_row_widget_class_init (GdRowWidgetClass *dc)
 {
@@ -74,6 +89,24 @@ GtkSizeGroup *size_group1;
 GtkSizeGroup *size_group2;
 
 
+static void
+switch_activated_cb (GtkSwitch *sw, GParamSpec *spec, gpointer user_data)
+{
+  /*GdRowWidget *row = user_data;*/
+  GdData *data = user_data;
+
+  data->on = gtk_switch_get_active (sw);
+}
+
+void
+remove_func (GtkWidget *widget, gpointer item)
+{
+  GdRowWidget *row = GD_ROW_WIDGET (widget);
+  GdData *data = item;
+
+  g_signal_handlers_disconnect_by_func (row->_switch, switch_activated_cb, data);
+}
+
 GtkWidget *
 fill_func (gpointer   item,
            GtkWidget *old_widget,
@@ -81,10 +114,8 @@ fill_func (gpointer   item,
            gpointer   user_data)
 {
   GdRowWidget *row;
-  GdData *data = GD_DATA (item);
+  GdData *data = item;
   gchar *label;
-
-  g_message ("fill func for row %u", item_index);
 
   if (G_UNLIKELY (!old_widget))
     {
@@ -99,7 +130,7 @@ fill_func (gpointer   item,
       row = GD_ROW_WIDGET (old_widget);
     }
 
-#if 1
+#if 0
   if (item_index% 2 == 0)
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 200);
   else
@@ -109,8 +140,11 @@ fill_func (gpointer   item,
 
   label = g_strdup_printf ("Row %'u of %'u", item_index, data->model_size);
   gtk_label_set_label (GTK_LABEL (row->label1), label);
-  gtk_label_set_label (GTK_LABEL (row->label2), data->text);
-  gtk_widget_set_margin_top (GTK_WIDGET (row), 12);
+  gtk_label_set_markup (GTK_LABEL (row->label2), data->text);
+  gtk_switch_set_active (GTK_SWITCH (row->_switch), data->on);
+  gtk_widget_set_margin_top (GTK_WIDGET (row), MIN (200, item_index * 4));
+
+  g_signal_connect (G_OBJECT (row->_switch), "notify::active", G_CALLBACK (switch_activated_cb), item);
 
   g_free (label);
 
@@ -129,22 +163,26 @@ main (int argc, char **argv)
   GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
   GtkWidget *list = gd_model_list_box_new ();
 
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+
   size_group1 = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
   size_group2 = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
 
   GListStore *store = g_list_store_new (GD_TYPE_DATA);
-  model_size = 150;
+  model_size = 40;
   for (i = 0; i < model_size; i ++)
     {
       GdData *d = g_object_new (GD_TYPE_DATA, NULL);
       d->model_size = model_size;
-      d->text = "fpoobar'lsfasdf asdf asdfas df asd fasd f asdf as dfewrthuier htuiheasruig hdrhfughseduig hisdfiugsdhiugisdf";
+      d->text = "fpoobar'lsfasdf asdf <a href=\"foobar\">BLA BLA</a>asdfas df asd fasd f asdf as dfewrthuier htuiheasruig hdrhfughseduig hisdfiugsdhiugis<a href=\"foobar2\">BLA BLA 2</a>df";
+      d->on = FALSE;
       g_list_store_append (store, d);
     }
 
 
   gd_model_list_box_set_model (GD_MODEL_LIST_BOX (list), G_LIST_MODEL (store));
   gd_model_list_box_set_fill_func (GD_MODEL_LIST_BOX (list), fill_func, NULL);
+  gd_model_list_box_set_remove_func (GD_MODEL_LIST_BOX (list), remove_func, NULL);
 
 
   gtk_container_add (GTK_CONTAINER (scroller), list);
