@@ -132,10 +132,10 @@ fill_func (gpointer   item,
     }
 
 #if 1
-  if (item_index < N/2)
-    gtk_widget_set_size_request (GTK_WIDGET (row), -1, 0);
+  if (item_index > 9)
+    gtk_widget_set_size_request (GTK_WIDGET (row), -1, 500);
   else
-    gtk_widget_set_size_request (GTK_WIDGET (row), -1, 200);
+    gtk_widget_set_size_request (GTK_WIDGET (row), -1, 0);
 #endif
 
 
