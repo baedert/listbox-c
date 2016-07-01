@@ -301,9 +301,9 @@ configure_adjustment (GdModelListBox *box)
 
   widget_height = gtk_widget_get_allocated_height (GTK_WIDGET (box));
   list_height   = estimated_list_height (box, NULL, NULL);
-  cur_upper = gtk_adjustment_get_upper (priv->vadjustment);
-  page_size = gtk_adjustment_get_page_size (priv->vadjustment);
-  cur_value = gtk_adjustment_get_value (priv->vadjustment);
+  cur_upper     = gtk_adjustment_get_upper (priv->vadjustment);
+  page_size     = gtk_adjustment_get_page_size (priv->vadjustment);
+  cur_value     = gtk_adjustment_get_value (priv->vadjustment);
 
 
   if ((int)cur_upper != MAX (list_height, widget_height)) {
@@ -321,6 +321,8 @@ configure_adjustment (GdModelListBox *box)
       gtk_adjustment_set_value (priv->vadjustment, cur_upper - widget_height);
     }
 
+
+  gtk_adjustment_set_upper (priv->vadjustment, 400);
 }
 
 
@@ -535,9 +537,9 @@ ensure_visible_widgets (GdModelListBox *box)
 
   if (bin_window_full (box))
     {
-      g_assert (bin_y (box) <= 0);
-      g_assert (bin_y (box) + gdk_window_get_height (priv->bin_window) >=
-                gtk_adjustment_get_page_size (priv->vadjustment));
+      /*g_assert (bin_y (box) <= 0);*/
+      /*g_assert (bin_y (box) + gdk_window_get_height (priv->bin_window) >=*/
+                /*gtk_adjustment_get_page_size (priv->vadjustment));*/
     }
 
 
@@ -570,6 +572,10 @@ items_changed_cb (GListModel *model,
       configure_adjustment (box);
       return;
     }
+
+  if (priv->placeholder)
+    gtk_widget_set_child_visible (priv->placeholder,
+                                  g_list_model_get_n_items (model) == 0);
 
   /* Empty the current view */
   for (i = priv->widgets->len - 1; i >= 0; i --)
@@ -612,6 +618,8 @@ __forall (GtkContainer *container,
       guint i;
       for (i = 0; i < priv->pool->len; i ++)
         (*callback)(g_ptr_array_index (priv->pool, i), callback_data);
+
+      (*callback)(priv->placeholder, callback_data);
     }
 }
 /* }}} */
@@ -620,27 +628,48 @@ __forall (GtkContainer *container,
 static void
 __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
 {
+  PRIV_DECL (widget);
   gboolean height_changed = allocation->height != gtk_widget_get_allocated_height (widget);
 
   gtk_widget_set_allocation (widget, allocation);
 
-  position_children ((GdModelListBox *)widget);
 
-  if (gtk_widget_get_realized (widget))
+  if (priv->widgets->len > 0)
     {
-      gdk_window_move_resize (gtk_widget_get_window (widget),
-                              allocation->x, allocation->y,
-                              allocation->width, allocation->height);
+      position_children ((GdModelListBox *)widget);
 
-      update_bin_window ((GdModelListBox *)widget);
+      if (gtk_widget_get_realized (widget))
+        {
+          gdk_window_move_resize (gtk_widget_get_window (widget),
+                                  allocation->x, allocation->y,
+                                  allocation->width, allocation->height);
+
+          update_bin_window ((GdModelListBox *)widget);
+        }
+
+
+      /*if (!bin_window_full ((GdModelListBox *)widget) && height_changed)*/
+      if (height_changed)
+        ensure_visible_widgets ((GdModelListBox *)widget);
+
+      configure_adjustment ((GdModelListBox *)widget);
     }
+  else if (priv->placeholder)
+    {
+      /* List is empty, position placeholder. */
+      int min_width, min_height;
+      GtkAllocation placeholder_allocation;
 
+      gtk_widget_get_preferred_width (priv->placeholder, &min_width, NULL);
+      gtk_widget_get_preferred_height_for_width (priv->placeholder, min_width, &min_height, NULL);
 
-  /*if (!bin_window_full ((GdModelListBox *)widget) && height_changed)*/
-  if (height_changed)
-    ensure_visible_widgets ((GdModelListBox *)widget);
+      placeholder_allocation.x = 0;
+      placeholder_allocation.y = 0;
+      placeholder_allocation.width = MAX (min_width, allocation->width);
+      placeholder_allocation.height = MAX (min_height, allocation->height);
 
-  configure_adjustment ((GdModelListBox *)widget);
+      gtk_widget_size_allocate (priv->placeholder, &placeholder_allocation);
+    }
 }
 
 static gboolean
@@ -667,7 +696,9 @@ __draw (GtkWidget *widget, cairo_t *ct)
         }
       else
         {
-           /* TODO: Draw placeholder */
+          gtk_container_propagate_draw (GTK_CONTAINER (widget),
+                                        priv->placeholder,
+                                        ct);
         }
     }
 
@@ -740,12 +771,20 @@ __get_preferred_width (GtkWidget *widget, int *min, int *nat)
   int min_width = 0;
   int nat_width = 0;
 
-  Foreach_Row
-    int m, n;
-    gtk_widget_get_preferred_width (row, &m, &n);
-    min_width = MAX (min_width, m);
-    nat_width = MAX (nat_width, n);
-  }}
+  /*if (g_list_get_n_rows (priv->model) > 0)*/
+    /*{*/
+      Foreach_Row
+        int m, n;
+        gtk_widget_get_preferred_width (row, &m, &n);
+        min_width = MAX (min_width, m);
+        nat_width = MAX (nat_width, n);
+      }}
+    /*}*/
+  /*else*/
+    /*{*/
+      /*min = 100;*/
+      /*nat = 100;*/
+    /*}*/
 
   *min = min_width;
   *nat = nat_width;
@@ -754,8 +793,8 @@ __get_preferred_width (GtkWidget *widget, int *min, int *nat)
 static void
 __get_preferred_height (GtkWidget *widget, int *min, int *nat)
 {
-  *min = 0;
-  *nat = 0;
+  *min = 200;
+  *nat = 200;
 }
 /* }}} */
 
@@ -859,6 +898,9 @@ gd_model_list_box_set_model (GdModelListBox *box,
     {
       g_signal_connect (G_OBJECT (model), "items-changed", G_CALLBACK (items_changed_cb), box);
       g_object_ref (model);
+
+      if (priv->placeholder)
+        gtk_widget_set_visible (priv->placeholder, g_list_model_get_n_items (model) == 0);
     }
   ensure_visible_widgets (box);
 
@@ -866,7 +908,8 @@ gd_model_list_box_set_model (GdModelListBox *box,
 }
 
 void
-gd_model_list_box_set_placeholder (GdModelListBox *box, GtkWidget *placeholder)
+gd_model_list_box_set_placeholder (GdModelListBox *box,
+                                   GtkWidget      *placeholder)
 {
   PRIV_DECL (box);
 
@@ -874,6 +917,8 @@ gd_model_list_box_set_placeholder (GdModelListBox *box, GtkWidget *placeholder)
   g_return_if_fail (GTK_IS_WIDGET (placeholder));
 
   priv->placeholder = placeholder;
+  gtk_widget_set_parent_window (placeholder, priv->bin_window);
+  gtk_widget_set_parent (placeholder, GTK_WIDGET (box));
 }
 
 GListModel *
@@ -919,7 +964,7 @@ gd_model_list_box_init (GdModelListBox *box)
   PRIV_DECL (box);
 
   priv->widgets    = g_ptr_array_sized_new (20);
-  priv->pool       = g_ptr_array_new ();
+  priv->pool       = g_ptr_array_sized_new (10);
   priv->model_from = 0;
   priv->model_to   = 0;
   priv->bin_y_diff = 0;

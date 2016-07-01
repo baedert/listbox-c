@@ -88,7 +88,8 @@ static void gd_row_widget_class_init (GdRowWidgetClass *dc)
 GtkSizeGroup *size_group1;
 GtkSizeGroup *size_group2;
 
-const guint N = 20;
+/*const guint N = 100000;*/
+const guint N = 1;
 
 
 static void
@@ -162,6 +163,7 @@ main (int argc, char **argv)
   GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
   GtkWidget *list = gd_model_list_box_new ();
+  GtkWidget *placeholder= gtk_label_new ("NO ROWS \\o/");
 
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 
@@ -182,6 +184,9 @@ main (int argc, char **argv)
   gd_model_list_box_set_model (GD_MODEL_LIST_BOX (list), G_LIST_MODEL (store));
   gd_model_list_box_set_fill_func (GD_MODEL_LIST_BOX (list), fill_func, NULL);
   gd_model_list_box_set_remove_func (GD_MODEL_LIST_BOX (list), remove_func, NULL);
+
+  gtk_widget_show (placeholder);
+  gd_model_list_box_set_placeholder (GD_MODEL_LIST_BOX (list), placeholder);
 
 
   gtk_container_add (GTK_CONTAINER (scroller), list);
