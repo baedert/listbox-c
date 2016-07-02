@@ -8,7 +8,7 @@ struct _GdData
 
   guint model_size;
   const gchar *text;
-  gboolean on;
+  guint on : 1;
 };
 
 typedef struct _GdData GdData;
@@ -96,7 +96,7 @@ GtkSizeGroup *size_group2;
 
 GListModel *model;
 
-const guint N = 1;
+const guint N = 100;
 
 
 static void
@@ -107,6 +107,14 @@ switch_activated_cb (GtkSwitch *sw, GParamSpec *spec, gpointer user_data)
   data->on = gtk_switch_get_active (sw);
 }
 
+static void
+remove_button_clicked_cb (GtkButton *source, gpointer user_data)
+{
+  guint item_index = GPOINTER_TO_UINT (user_data);
+
+  g_list_store_remove (G_LIST_STORE (model), item_index);
+}
+
 void
 remove_func (GtkWidget *widget, gpointer item)
 {
@@ -114,14 +122,9 @@ remove_func (GtkWidget *widget, gpointer item)
   GdData *data = item;
 
   g_signal_handlers_disconnect_by_func (row->_switch, switch_activated_cb, data);
-}
-
-static void
-remove_button_clicked_cb (GtkButton *source, gpointer user_data)
-{
-  guint item_index = GPOINTER_TO_UINT (user_data);
-
-  g_list_store_remove (G_LIST_STORE (model), item_index);
+  g_signal_handlers_disconnect_matched (row->remove_button,
+                                        G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
+                                        remove_button_clicked_cb, NULL);
 }
 
 GtkWidget *
