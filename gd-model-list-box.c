@@ -320,9 +320,6 @@ configure_adjustment (GdModelListBox *box)
     {
       gtk_adjustment_set_value (priv->vadjustment, cur_upper - widget_height);
     }
-
-
-  gtk_adjustment_set_upper (priv->vadjustment, 400);
 }
 
 
@@ -771,20 +768,12 @@ __get_preferred_width (GtkWidget *widget, int *min, int *nat)
   int min_width = 0;
   int nat_width = 0;
 
-  /*if (g_list_get_n_rows (priv->model) > 0)*/
-    /*{*/
-      Foreach_Row
-        int m, n;
-        gtk_widget_get_preferred_width (row, &m, &n);
-        min_width = MAX (min_width, m);
-        nat_width = MAX (nat_width, n);
-      }}
-    /*}*/
-  /*else*/
-    /*{*/
-      /*min = 100;*/
-      /*nat = 100;*/
-    /*}*/
+  Foreach_Row
+    int m, n;
+    gtk_widget_get_preferred_width (row, &m, &n);
+    min_width = MAX (min_width, m);
+    nat_width = MAX (nat_width, n);
+  }}
 
   *min = min_width;
   *nat = nat_width;
