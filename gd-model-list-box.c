@@ -1,5 +1,5 @@
 /*
- *  Copyright 2015 Timm Bäder
+ *  Copyright 2016 Timm Bäder
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #include "gd-model-list-box.h"
 
@@ -782,8 +781,8 @@ __get_preferred_width (GtkWidget *widget, int *min, int *nat)
 static void
 __get_preferred_height (GtkWidget *widget, int *min, int *nat)
 {
-  *min = 200;
-  *nat = 200;
+  *min = 1;
+  *nat = 1;
 }
 /* }}} */
 

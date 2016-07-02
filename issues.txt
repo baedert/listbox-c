@@ -1,0 +1,3 @@
+ - The jumping scrollbar makes scrollbar-drag scrolling basically impossible
+ - There are some bugs when removing items while scrolled down
+
