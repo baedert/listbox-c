@@ -33,6 +33,7 @@ struct _GdRowWidget
   GtkWidget *entry;
   GtkWidget *scale;
   GtkWidget *stack;
+  GtkWidget *remove_button;
 };
 
 typedef struct _GdRowWidget GdRowWidget;
@@ -57,6 +58,7 @@ static void gd_row_widget_init (GdRowWidget *d)
   d->entry = gtk_entry_new ();
   d->scale = gtk_scale_new (GTK_ORIENTATION_HORIZONTAL, NULL);
   d->stack = gtk_stack_new ();
+  d->remove_button = gtk_button_new_from_icon_name ("list-remove-symbolic", GTK_ICON_SIZE_BUTTON);
 
   gtk_label_set_ellipsize (GTK_LABEL (d->label2), PANGO_ELLIPSIZE_END);
   gtk_widget_set_hexpand (d->label2, TRUE);
@@ -65,6 +67,9 @@ static void gd_row_widget_init (GdRowWidget *d)
   gtk_widget_set_valign (d->_switch, GTK_ALIGN_CENTER);
   gtk_widget_set_halign (d->_switch, GTK_ALIGN_CENTER);
   gtk_widget_set_valign (d->entry, GTK_ALIGN_CENTER);
+  gtk_widget_set_valign (d->remove_button, GTK_ALIGN_CENTER);
+  gtk_style_context_add_class (gtk_widget_get_style_context (d->remove_button), "circular");
+
 
 
   gtk_container_add (GTK_CONTAINER (d->stack), d->_switch);
@@ -75,6 +80,7 @@ static void gd_row_widget_init (GdRowWidget *d)
   gtk_container_add (GTK_CONTAINER (d), d->label2);
   gtk_container_add (GTK_CONTAINER (d), d->button);
   gtk_container_add (GTK_CONTAINER (d), d->stack);
+  gtk_container_add (GTK_CONTAINER (d), d->remove_button);
 
   gtk_widget_show_all (GTK_WIDGET (d));
 }
@@ -88,7 +94,8 @@ static void gd_row_widget_class_init (GdRowWidgetClass *dc)
 GtkSizeGroup *size_group1;
 GtkSizeGroup *size_group2;
 
-/*const guint N = 100000;*/
+GListModel *model;
+
 const guint N = 1;
 
 
@@ -107,6 +114,14 @@ remove_func (GtkWidget *widget, gpointer item)
   GdData *data = item;
 
   g_signal_handlers_disconnect_by_func (row->_switch, switch_activated_cb, data);
+}
+
+static void
+remove_button_clicked_cb (GtkButton *source, gpointer user_data)
+{
+  guint item_index = GPOINTER_TO_UINT (user_data);
+
+  g_list_store_remove (G_LIST_STORE (model), item_index);
 }
 
 GtkWidget *
@@ -147,6 +162,8 @@ fill_func (gpointer   item,
   /*gtk_widget_set_margin_top (GTK_WIDGET (row), MIN (200, item_index * 4));*/
 
   g_signal_connect (G_OBJECT (row->_switch), "notify::active", G_CALLBACK (switch_activated_cb), item);
+  g_signal_connect (G_OBJECT (row->remove_button), "clicked",
+                    G_CALLBACK (remove_button_clicked_cb), GUINT_TO_POINTER (item_index));
 
   g_free (label);
 
@@ -170,18 +187,18 @@ main (int argc, char **argv)
   size_group1 = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
   size_group2 = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
 
-  GListStore *store = g_list_store_new (GD_TYPE_DATA);
+  model = (GListModel *)g_list_store_new (GD_TYPE_DATA);
   for (i = 0; i < N; i ++)
     {
       GdData *d = g_object_new (GD_TYPE_DATA, NULL);
       d->model_size = N;
       d->text = "fpoobar'lsfasdf asdf <a href=\"foobar\">BLA BLA</a>asdfas df asd fasd f asdf as dfewrthuier htuiheasruig hdrhfughseduig hisdfiugsdhiugis<a href=\"foobar2\">BLA BLA 2</a>df";
       d->on = FALSE;
-      g_list_store_append (store, d);
+      g_list_store_append (G_LIST_STORE (model), d);
     }
 
 
-  gd_model_list_box_set_model (GD_MODEL_LIST_BOX (list), G_LIST_MODEL (store));
+  gd_model_list_box_set_model (GD_MODEL_LIST_BOX (list), model);
   gd_model_list_box_set_fill_func (GD_MODEL_LIST_BOX (list), fill_func, NULL);
   gd_model_list_box_set_remove_func (GD_MODEL_LIST_BOX (list), remove_func, NULL);
 
