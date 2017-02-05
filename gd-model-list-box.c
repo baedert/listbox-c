@@ -125,34 +125,6 @@ remove_child_by_index (GdModelListBox *box, guint index)
   g_ptr_array_add (priv->pool, row);
 }
 
-static void
-position_children (GdModelListBox *box)
-{
-  GtkAllocation alloc;
-  GtkAllocation child_alloc;
-  PRIV_DECL (box);
-  int y, foo;
-
-  gtk_widget_get_allocation (GTK_WIDGET (box), &alloc);
-
-  y = alloc.y;
-
-  child_alloc.x = 0;
-  child_alloc.width = alloc.width;
-
-
-  Foreach_Row
-    int h;
-
-    gtk_widget_get_preferred_height_for_width (row, alloc.width, &h, &foo);
-    child_alloc.y = y;
-    child_alloc.height = h;
-    gtk_widget_size_allocate (row, &child_alloc);
-
-    y += h;
-  }}
-}
-
 static inline int
 row_height (GdModelListBox *box, GtkWidget *w)
 {
@@ -527,7 +499,6 @@ ensure_visible_widgets (GdModelListBox *box)
 
 
   update_bin_window (box);
-  position_children (box);
   configure_adjustment (box);
 
 
@@ -539,7 +510,7 @@ ensure_visible_widgets (GdModelListBox *box)
     }
 
 
-
+  gtk_widget_queue_allocate (widget); // Reposition children
   gtk_widget_queue_draw (widget);
 }
 
@@ -594,7 +565,24 @@ __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
 
   if (priv->widgets->len > 0)
     {
-      position_children ((GdModelListBox *)widget);
+      GtkAllocation child_alloc;
+      int y;
+
+      y = allocation->y;
+
+      child_alloc.x = 0;
+      child_alloc.width = allocation->width;
+
+      Foreach_Row
+        int h;
+
+        gtk_widget_get_preferred_height_for_width (row, allocation->width, &h, NULL);
+        child_alloc.y = y;
+        child_alloc.height = h;
+        gtk_widget_size_allocate (row, &child_alloc);
+
+        y += h;
+      }}
 
       if (gtk_widget_get_realized (widget))
         {
