@@ -142,8 +142,6 @@ fill_func (gpointer   item,
   if (G_UNLIKELY (!old_widget))
     {
       row = GD_ROW_WIDGET (gd_row_widget_new ());
-      gtk_widget_show (GTK_WIDGET (row));
-
       gtk_size_group_add_widget (size_group1, row->label1);
       gtk_size_group_add_widget (size_group2, row->label2);
     }
@@ -208,7 +206,6 @@ main (int argc, char **argv)
   gd_model_list_box_set_fill_func (GD_MODEL_LIST_BOX (list), fill_func, NULL);
   gd_model_list_box_set_remove_func (GD_MODEL_LIST_BOX (list), remove_func, NULL);
 
-  gtk_widget_show (placeholder);
   gd_model_list_box_set_placeholder (GD_MODEL_LIST_BOX (list), placeholder);
 
 
