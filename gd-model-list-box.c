@@ -672,6 +672,19 @@ static void
 __snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
 {
   PRIV_DECL (widget);
+  GtkStyleContext *context;
+  GtkAllocation alloc;
+
+  context = gtk_widget_get_style_context (widget);
+  gtk_widget_get_allocation (widget, &alloc);
+
+  gtk_snapshot_render_background (snapshot,
+                                  context,
+                                  alloc.x,
+                                  alloc.y,
+                                  alloc.width,
+                                  alloc.height);
+
 
   if (g_list_model_get_n_items (priv->model) > 0)
     {
