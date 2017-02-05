@@ -578,6 +578,7 @@ items_changed_cb (GListModel *model,
     remove_child_by_index (box, i);
 
   priv->model_to = priv->model_from;
+  update_bin_window (box);
   ensure_visible_widgets (box);
 }
 
@@ -681,12 +682,11 @@ __realize (GtkWidget *widget)
   GtkAllocation  allocation;
   GdkWindow     *window;
 
+  gtk_widget_get_allocation (widget, &allocation);
   gtk_widget_set_realized (widget, TRUE);
 
-  gtk_widget_get_allocation (widget, &allocation);
-
   window = gdk_window_new_child (gtk_widget_get_parent_window (widget),
-                                 GDK_ALL_EVENTS_MASK,
+                                 gtk_widget_get_events (widget) | GDK_ALL_EVENTS_MASK,
                                  &allocation);
   gdk_window_set_user_data (window, widget);
   gtk_widget_set_window (widget, window);
