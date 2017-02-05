@@ -41,7 +41,7 @@ struct _GdModelListBoxPrivate
 typedef struct _GdModelListBoxPrivate GdModelListBoxPrivate;
 
 
-G_DEFINE_TYPE_WITH_CODE (GdModelListBox, gd_model_list_box, GTK_TYPE_CONTAINER,
+G_DEFINE_TYPE_WITH_CODE (GdModelListBox, gd_model_list_box, GTK_TYPE_WIDGET,
                          G_ADD_PRIVATE (GdModelListBox)
                          G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, NULL));
 
@@ -582,44 +582,6 @@ items_changed_cb (GListModel *model,
   ensure_visible_widgets (box);
 }
 
-/* GtkContainer vfuncs {{{ */
-static void
-__add (GtkContainer *container, GtkWidget *child)
-{
-  g_error ("Don't use that.");
-}
-
-static void
-__remove (GtkContainer *container, GtkWidget *child)
-{
-  /*PRIV_DECL (container);*/
-  g_assert (gtk_widget_get_parent (child) == GTK_WIDGET (container));
-  /*g_assert (gtk_widget_get_parent_window (child) == priv->bin_window); XXX ??? */
-}
-
-static void
-__forall (GtkContainer *container,
-          gboolean      include_internals,
-          GtkCallback   callback,
-          gpointer      callback_data)
-{
-  PRIV_DECL (container);
-
-  Foreach_Row
-    (*callback)(row, callback_data);
-  }}
-
-  if (include_internals)
-    {
-      guint i;
-      for (i = 0; i < priv->pool->len; i ++)
-        (*callback)(g_ptr_array_index (priv->pool, i), callback_data);
-
-      (*callback)(priv->placeholder, callback_data);
-    }
-}
-/* }}} */
-
 /* GtkWidget vfuncs {{{ */
 static void
 __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
@@ -922,7 +884,6 @@ gd_model_list_box_class_init (GdModelListBoxClass *class)
 {
   GObjectClass      *object_class    = G_OBJECT_CLASS (class);
   GtkWidgetClass    *widget_class    = GTK_WIDGET_CLASS (class);
-  GtkContainerClass *container_class = GTK_CONTAINER_CLASS (class);
 
   object_class->set_property = __set_property;
   object_class->get_property = __get_property;
@@ -934,10 +895,6 @@ gd_model_list_box_class_init (GdModelListBoxClass *class)
   widget_class->snapshot             = __snapshot;
   widget_class->realize              = __realize;
   widget_class->unrealize            = __unrealize;
-
-  container_class->add    = __add;
-  container_class->remove = __remove;
-  container_class->forall = __forall;
 
   g_object_class_override_property (object_class, PROP_HADJUSTMENT,    "hadjustment");
   g_object_class_override_property (object_class, PROP_VADJUSTMENT,    "vadjustment");

@@ -5,7 +5,7 @@
 
 struct _GdModelListBox
 {
-  GtkContainer parent_instance;
+  GtkWidget parent_instance;
 };
 
 struct _GdModelListBoxClass
