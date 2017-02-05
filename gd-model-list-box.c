@@ -126,14 +126,13 @@ remove_child_by_index (GdModelListBox *box, guint index)
 }
 
 static inline int
-row_height (GdModelListBox *box, GtkWidget *w)
+requested_row_height (GdModelListBox *box, GtkWidget *w)
 {
-  int min, nat;
-  gtk_widget_get_preferred_height_for_width (w,
-                                             gtk_widget_get_allocated_width (GTK_WIDGET (box)),
-                                             &min, &nat);
-
-  /*return min;*/
+  int nat;
+  gtk_widget_measure (w,
+                      GTK_ORIENTATION_VERTICAL,
+                      gtk_widget_get_allocated_width (GTK_WIDGET (box)),
+                      &nat, NULL, NULL, NULL);
   return nat;
 }
 
@@ -145,7 +144,7 @@ row_y (GdModelListBox *box, guint index)
   PRIV_DECL (box);
 
   for (i = 0; i < index; i ++)
-    y += row_height (box, g_ptr_array_index (priv->widgets, i));
+    y += requested_row_height (box, g_ptr_array_index (priv->widgets, i));
 
   return y;
 }
@@ -157,7 +156,7 @@ estimated_widget_height (GdModelListBox *box)
   PRIV_DECL (box);
 
   Foreach_Row
-    avg_widget_height += row_height (box, row);
+    avg_widget_height += requested_row_height (box, row);
   }}
 
   if (priv->widgets->len > 0)
@@ -215,7 +214,7 @@ estimated_list_height (GdModelListBox *box,
   g_assert (top_widgets + bottom_widgets + priv->widgets->len == g_list_model_get_n_items (priv->model));
 
   Foreach_Row
-    exact_height += row_height (box, row);
+    exact_height += requested_row_height (box, row);
   }}
 
   if (top_part)
@@ -240,7 +239,7 @@ update_bin_window (GdModelListBox *box)
   gtk_widget_get_allocation (GTK_WIDGET (box), &alloc);
 
   Foreach_Row
-    int min = row_height (box, row);
+    int min = requested_row_height (box, row);
     g_assert (min >= 0);
     h += min;
   }}
@@ -370,7 +369,7 @@ ensure_visible_widgets (GdModelListBox *box)
     for (i = 0; i < priv->widgets->len; i ++)
       {
         GtkWidget *w = g_ptr_array_index (priv->widgets, i);
-        int w_height = row_height (box, w);
+        int w_height = requested_row_height (box, w);
         if (bin_y (box) + row_y (box, i) + w_height < 0)
           {
             g_assert_cmpint (i, ==, 0);
@@ -399,7 +398,7 @@ ensure_visible_widgets (GdModelListBox *box)
         new_widget = get_widget (box, priv->model_from);
         g_assert (new_widget != NULL);
         insert_child_internal (box, new_widget, 0);
-        min = row_height (box, new_widget);
+        min = requested_row_height (box, new_widget);
         priv->bin_y_diff -= min;
         bin_height += min;
         top_added = TRUE;
@@ -422,7 +421,7 @@ ensure_visible_widgets (GdModelListBox *box)
         if (y > widget_height)
           {
             g_message ("Removing widget %d", i);
-            int w_height = row_height (box, w);
+            int w_height = requested_row_height (box, w);
             remove_child_by_index (box, i);
             bin_height -= w_height;
             priv->model_to --;
@@ -448,7 +447,7 @@ ensure_visible_widgets (GdModelListBox *box)
         g_message ("Inserting bottom widget for position %u at %u", priv->model_to, priv->widgets->len);
         new_widget = get_widget (box, priv->model_to);
         insert_child_internal (box, new_widget, priv->widgets->len);
-        min = row_height (box, new_widget);
+        min = requested_row_height (box, new_widget);
         bin_height += min;
 
         priv->model_to ++;
@@ -568,6 +567,13 @@ __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
       GtkAllocation child_alloc;
       int y;
 
+
+      /*if (!bin_window_full ((GdModelListBox *)widget) && height_changed)*/
+      if (height_changed)
+        ensure_visible_widgets ((GdModelListBox *)widget);
+
+
+      /* Now actually allocate sizes to all the rows */
       y = allocation->y;
 
       child_alloc.x = 0;
@@ -592,11 +598,6 @@ __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
 
           update_bin_window ((GdModelListBox *)widget);
         }
-
-
-      /*if (!bin_window_full ((GdModelListBox *)widget) && height_changed)*/
-      if (height_changed)
-        ensure_visible_widgets ((GdModelListBox *)widget);
 
       configure_adjustment ((GdModelListBox *)widget);
     }

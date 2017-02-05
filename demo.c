@@ -157,6 +157,8 @@ fill_func (gpointer   item,
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 0);
 #endif
 
+  gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
+
 
   label = g_strdup_printf ("Row %'u of %'u", data->item_index, data->model_size);
   gtk_label_set_label (GTK_LABEL (row->label1), label);
