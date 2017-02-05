@@ -9,6 +9,7 @@ struct _GdData
   guint model_size;
   const gchar *text;
   guint on : 1;
+  guint item_index;
 };
 
 typedef struct _GdData GdData;
@@ -119,7 +120,6 @@ void
 remove_func (GtkWidget *widget, gpointer item)
 {
   GdRowWidget *row = GD_ROW_WIDGET (widget);
-  GdData *data = item;
 
   g_signal_handlers_disconnect_matched (row->_switch,
                                         G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
@@ -160,7 +160,7 @@ fill_func (gpointer   item,
 #endif
 
 
-  label = g_strdup_printf ("Row %'u of %'u", item_index, data->model_size);
+  label = g_strdup_printf ("Row %'u of %'u", data->item_index, data->model_size);
   gtk_label_set_label (GTK_LABEL (row->label1), label);
   gtk_label_set_markup (GTK_LABEL (row->label2), data->text);
   gtk_switch_set_active (GTK_SWITCH (row->_switch), data->on);
@@ -196,6 +196,7 @@ main (int argc, char **argv)
   for (i = 0; i < N; i ++)
     {
       GdData *d = g_object_new (GD_TYPE_DATA, NULL);
+      d->item_index = i;
       d->model_size = N;
       d->text = "fpoobar'lsfasdf asdf <a href=\"foobar\">BLA BLA</a>asdfas df asd fasd f asdf as dfewrthuier htuiheasruig hdrhfughseduig hisdfiugsdhiugis<a href=\"foobar2\">BLA BLA 2</a>df";
       d->on = FALSE;
