@@ -646,6 +646,15 @@ __snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
                                   alloc.width,
                                   alloc.height);
 
+  gtk_snapshot_push_clip (snapshot,
+                          &GRAPHENE_RECT_INIT(
+                            alloc.x,
+                            alloc.y,
+                            alloc.width,
+                            alloc.height
+                          ),
+                          "GdModelListBox clip");
+
 
   if (g_list_model_get_n_items (priv->model) > 0)
     {
@@ -661,6 +670,8 @@ __snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
                                  priv->placeholder,
                                  snapshot);
     }
+
+  gtk_snapshot_pop (snapshot);
 }
 
 static void
