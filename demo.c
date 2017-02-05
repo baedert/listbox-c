@@ -110,6 +110,8 @@ remove_button_clicked_cb (GtkButton *source, gpointer user_data)
 {
   guint item_index = GPOINTER_TO_UINT (user_data);
 
+  g_message ("Removing item at position %u", item_index);
+
   g_list_store_remove (G_LIST_STORE (model), item_index);
 }
 
@@ -119,7 +121,9 @@ remove_func (GtkWidget *widget, gpointer item)
   GdRowWidget *row = GD_ROW_WIDGET (widget);
   GdData *data = item;
 
-  g_signal_handlers_disconnect_by_func (row->_switch, switch_activated_cb, data);
+  g_signal_handlers_disconnect_matched (row->_switch,
+                                        G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
+                                        switch_activated_cb, NULL);
   g_signal_handlers_disconnect_matched (row->remove_button,
                                         G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
                                         remove_button_clicked_cb, NULL);
@@ -148,7 +152,7 @@ fill_func (gpointer   item,
       row = GD_ROW_WIDGET (old_widget);
     }
 
-#if 1
+#if 0
   if (item_index > 9)
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 500);
   else
