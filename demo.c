@@ -81,8 +81,6 @@ static void gd_row_widget_init (GdRowWidget *d)
   gtk_container_add (GTK_CONTAINER (d), d->button);
   gtk_container_add (GTK_CONTAINER (d), d->stack);
   gtk_container_add (GTK_CONTAINER (d), d->remove_button);
-
-  gtk_widget_show_all (GTK_WIDGET (d));
 }
 static void gd_row_widget_class_init (GdRowWidgetClass *dc)
 {
@@ -178,7 +176,7 @@ int
 main (int argc, char **argv)
 {
   guint i;
-  gtk_init (&argc, &argv);
+  gtk_init ();
 
   GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
@@ -214,7 +212,7 @@ main (int argc, char **argv)
 
   g_signal_connect (G_OBJECT (window), "delete-event", G_CALLBACK (gtk_main_quit), NULL);
   gtk_window_resize (GTK_WINDOW (window), 500, 400);
-  gtk_widget_show_all (window);
+  gtk_widget_show (window);
   gtk_main ();
   return 0;
 }

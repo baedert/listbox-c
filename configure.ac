@@ -6,7 +6,7 @@ AC_PROG_CC
 AC_CONFIG_MACRO_DIRS([m4])
 LT_INIT
 
-PKG_CHECK_MODULES(LISTBOX, gtk+-3.0)
+PKG_CHECK_MODULES(LISTBOX, gtk+-4.0)
 
 CFLAGS+=" -g -O0 -fno-omit-frame-pointer -Wextra"
 

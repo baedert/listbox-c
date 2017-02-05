@@ -668,37 +668,25 @@ __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
     }
 }
 
-static gboolean
-__draw (GtkWidget *widget, cairo_t *ct)
+static void
+__snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
 {
-  GtkAllocation alloc;
-  GtkStyleContext *context;
   PRIV_DECL (widget);
 
-  context = gtk_widget_get_style_context (widget);
-  gtk_widget_get_allocation (widget, &alloc);
-
-  gtk_render_background (context, ct, 0, 0, alloc.width, alloc.height);
-
-  if (gtk_cairo_should_draw_window (ct, priv->bin_window))
+  if (g_list_model_get_n_items (priv->model) > 0)
     {
-      if (g_list_model_get_n_items (priv->model) > 0)
-        {
-          Foreach_Row
-            gtk_container_propagate_draw (GTK_CONTAINER (widget),
-                                          row,
-                                          ct);
-          }}
-        }
-      else
-        {
-          gtk_container_propagate_draw (GTK_CONTAINER (widget),
-                                        priv->placeholder,
-                                        ct);
-        }
+      Foreach_Row
+        gtk_widget_snapshot_child (widget,
+                                   row,
+                                   snapshot);
+      }}
     }
-
-  return GDK_EVENT_PROPAGATE;
+  else
+    {
+      gtk_widget_snapshot_child (widget,
+                                 priv->placeholder,
+                                 snapshot);
+    }
 }
 
 static void
@@ -706,29 +694,22 @@ __realize (GtkWidget *widget)
 {
   PRIV_DECL (widget);
   GtkAllocation  allocation;
-  GdkWindowAttr  attributes = { 0, };
   GdkWindow     *window;
 
   gtk_widget_get_allocation (widget, &allocation);
   gtk_widget_set_realized (widget, TRUE);
 
-  attributes.x = allocation.x;
-  attributes.y = allocation.y;
-  attributes.width = allocation.width;
-  attributes.height = allocation.height;
-  attributes.window_type = GDK_WINDOW_CHILD;
-  attributes.event_mask = gtk_widget_get_events (widget) |
-                          GDK_ALL_EVENTS_MASK;
-  attributes.wclass = GDK_INPUT_OUTPUT;
-
-  window = gdk_window_new (gtk_widget_get_parent_window (widget),
-                           &attributes, GDK_WA_X | GDK_WA_Y);
+  window = gdk_window_new_child (gtk_widget_get_parent_window (widget),
+                                 gtk_widget_get_events (widget) | GDK_ALL_EVENTS_MASK,
+                                 &allocation);
   gdk_window_set_user_data (window, widget);
   gtk_widget_set_window (widget, window);
 
 
-  attributes.height = 1;
-  priv->bin_window = gdk_window_new (window, &attributes, GDK_WA_X | GDK_WA_Y);
+  allocation.height = 1;
+  priv->bin_window = gdk_window_new_child (window,
+                                           GDK_ALL_EVENTS_MASK,
+                                           &allocation);
   gtk_widget_register_window (widget, priv->bin_window);
   gdk_window_show (priv->bin_window);
 
@@ -761,28 +742,36 @@ __map (GtkWidget *widget)
 }
 
 static void
-__get_preferred_width (GtkWidget *widget, int *min, int *nat)
+__measure (GtkWidget      *widget,
+           GtkOrientation  orientation,
+           int             for_size,
+           int            *minimum,
+           int            *natural,
+           int            *minimum_baseline,
+           int            *natural_baseline)
 {
   PRIV_DECL (widget);
-  int min_width = 0;
-  int nat_width = 0;
 
-  Foreach_Row
-    int m, n;
-    gtk_widget_get_preferred_width (row, &m, &n);
-    min_width = MAX (min_width, m);
-    nat_width = MAX (nat_width, n);
-  }}
+  if (orientation == GTK_ORIENTATION_HORIZONTAL)
+    {
+      int min_width = 0;
+      int nat_width = 0;
 
-  *min = min_width;
-  *nat = nat_width;
-}
+      Foreach_Row
+        int m, n;
+        gtk_widget_get_preferred_width (row, &m, &n);
+        min_width = MAX (min_width, m);
+        nat_width = MAX (nat_width, n);
+      }}
 
-static void
-__get_preferred_height (GtkWidget *widget, int *min, int *nat)
-{
-  *min = 1;
-  *nat = 1;
+      *minimum = min_width;
+      *natural = nat_width;
+    }
+  else /* VERTICAL */
+    {
+      *minimum = 1;
+      *natural = 1;
+    }
 }
 /* }}} */
 
@@ -926,11 +915,10 @@ gd_model_list_box_class_init (GdModelListBoxClass *class)
   object_class->get_property = __get_property;
   object_class->finalize     = __finalize;
 
-  widget_class->draw                 = __draw;
-  widget_class->size_allocate        = __size_allocate;
   widget_class->map                  = __map;
-  widget_class->get_preferred_width  = __get_preferred_width;
-  widget_class->get_preferred_height = __get_preferred_height;
+  widget_class->measure              = __measure;
+  widget_class->size_allocate        = __size_allocate;
+  widget_class->snapshot             = __snapshot;
   widget_class->realize              = __realize;
   widget_class->unrealize            = __unrealize;
 
@@ -950,6 +938,8 @@ static void
 gd_model_list_box_init (GdModelListBox *box)
 {
   PRIV_DECL (box);
+
+  gtk_widget_set_has_window (GTK_WIDGET (box), TRUE);
 
   priv->widgets    = g_ptr_array_sized_new (20);
   priv->pool       = g_ptr_array_sized_new (10);
