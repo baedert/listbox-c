@@ -80,6 +80,7 @@ static void gd_row_widget_init (GdRowWidget *d)
   gtk_container_add (GTK_CONTAINER (d), d->label1);
   gtk_container_add (GTK_CONTAINER (d), d->label2);
   gtk_container_add (GTK_CONTAINER (d), d->button);
+  gtk_container_add (GTK_CONTAINER (d), gtk_button_new_with_label ("Foo"));
   gtk_container_add (GTK_CONTAINER (d), d->stack);
   gtk_container_add (GTK_CONTAINER (d), d->remove_button);
 }
@@ -95,7 +96,7 @@ GtkSizeGroup *size_group2;
 
 GListModel *model;
 
-const guint N = 100000;
+const guint N = 10000;
 
 
 static void
@@ -175,6 +176,16 @@ fill_func (gpointer   item,
   return GTK_WIDGET (row);
 }
 
+static void
+set_focus_cb (GtkWindow *window,
+              GtkWidget *widget,
+              gpointer   user_data)
+{
+  if (widget != NULL)
+    g_message ("New focus widget: %s %p", gtk_widget_get_name (widget), widget);
+  else
+    g_message ("New focus widget: (NULL) NULL");
+}
 
 int
 main (int argc, char **argv)
@@ -186,6 +197,8 @@ main (int argc, char **argv)
   GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
   GtkWidget *list = gd_model_list_box_new ();
   GtkWidget *placeholder= gtk_label_new ("NO ROWS \\o/");
+
+  g_signal_connect (window, "set-focus", G_CALLBACK (set_focus_cb), NULL);
 
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 

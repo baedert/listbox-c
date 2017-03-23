@@ -402,7 +402,7 @@ ensure_visible_widgets (GdModelListBox *box)
         priv->bin_y_diff -= min;
         bin_height += min;
         top_added = TRUE;
-        g_message ("Adding top widget for index %d", priv->model_from);
+        /*g_message ("Adding top widget for index %d", priv->model_from);*/
       }
   }
 
@@ -417,10 +417,10 @@ ensure_visible_widgets (GdModelListBox *box)
         g_assert (w);
         int y = bin_y (box) + row_y (box, i);
 
-        g_message ("%d: %d + %d > %d", i, bin_y (box), row_y (box, i), widget_height);
+        /*g_message ("%d: %d + %d > %d", i, bin_y (box), row_y (box, i), widget_height);*/
         if (y > widget_height)
           {
-            g_message ("Removing widget %d", i);
+            /*g_message ("Removing widget %d", i);*/
             int w_height = requested_row_height (box, w);
             remove_child_by_index (box, i);
             bin_height -= w_height;
@@ -437,14 +437,14 @@ ensure_visible_widgets (GdModelListBox *box)
   /* Insert bottom widgets */
   {
     bottom_added = FALSE;
-    /*g_message ("%d + %d <= %d", bin_y (box), bin_height, widget_height);*/
+    /*g_message ("%d (%f) + %d <= %d", bin_y (box), priv->bin_y_diff, bin_height, widget_height);*/
     while (bin_y (box) + bin_height <= widget_height &&
            priv->model_to < g_list_model_get_n_items (priv->model))
       {
         GtkWidget *new_widget;
         int min;
 
-        g_message ("Inserting bottom widget for position %u at %u", priv->model_to, priv->widgets->len);
+        /*g_message ("Inserting bottom widget for position %u at %u", priv->model_to, priv->widgets->len);*/
         new_widget = get_widget (box, priv->model_to);
         insert_child_internal (box, new_widget, priv->widgets->len);
         min = requested_row_height (box, new_widget);
@@ -480,12 +480,12 @@ ensure_visible_widgets (GdModelListBox *box)
 
     configure_adjustment (box);
 
-    g_message ("Setting value to %f - %d", priv->bin_y_diff, bin_window_y);
+    /*g_message ("Setting value to %f - %d", priv->bin_y_diff, bin_window_y);*/
     gtk_adjustment_set_value (priv->vadjustment, priv->bin_y_diff - bin_window_y);
     if (gtk_adjustment_get_value (priv->vadjustment) < priv->bin_y_diff)
       {
         gtk_adjustment_set_value (priv->vadjustment, priv->bin_y_diff);
-        g_message ("Case 1");
+        /*g_message ("Case 1");*/
       }
 
     if (bin_y (box) > 0)
@@ -889,12 +889,12 @@ gd_model_list_box_class_init (GdModelListBoxClass *class)
   object_class->get_property = __get_property;
   object_class->finalize     = __finalize;
 
-  widget_class->map                  = __map;
-  widget_class->measure              = __measure;
-  widget_class->size_allocate        = __size_allocate;
-  widget_class->snapshot             = __snapshot;
-  widget_class->realize              = __realize;
-  widget_class->unrealize            = __unrealize;
+  widget_class->map           = __map;
+  widget_class->measure       = __measure;
+  widget_class->size_allocate = __size_allocate;
+  widget_class->snapshot      = __snapshot;
+  widget_class->realize       = __realize;
+  widget_class->unrealize     = __unrealize;
 
   g_object_class_override_property (object_class, PROP_HADJUSTMENT,    "hadjustment");
   g_object_class_override_property (object_class, PROP_VADJUSTMENT,    "vadjustment");
