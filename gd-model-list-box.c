@@ -559,8 +559,7 @@ __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
   PRIV_DECL (widget);
   gboolean height_changed = allocation->height != gtk_widget_get_allocated_height (widget);
 
-  gtk_widget_set_allocation (widget, allocation);
-
+  GTK_WIDGET_CLASS (gd_model_list_box_parent_class)->size_allocate (widget, allocation);
 
   if (priv->widgets->len > 0)
     {
@@ -582,7 +581,8 @@ __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
       Foreach_Row
         int h;
 
-        gtk_widget_get_preferred_height_for_width (row, allocation->width, &h, NULL);
+        gtk_widget_measure (row, GTK_ORIENTATION_VERTICAL, allocation->width,
+                            &h, NULL, NULL, NULL);
         child_alloc.y = y;
         child_alloc.height = h;
         gtk_widget_size_allocate (row, &child_alloc);
@@ -607,8 +607,8 @@ __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
       int min_width, min_height;
       GtkAllocation placeholder_allocation;
 
-      gtk_widget_get_preferred_width (priv->placeholder, &min_width, NULL);
-      gtk_widget_get_preferred_height_for_width (priv->placeholder, min_width, &min_height, NULL);
+      gtk_widget_measure (priv->placeholder, GTK_ORIENTATION_HORIZONTAL, -1, &min_width, NULL, NULL, NULL);
+      gtk_widget_measure (priv->placeholder, GTK_ORIENTATION_VERTICAL, min_width, &min_height, NULL, NULL, NULL);
 
       placeholder_allocation.x = 0;
       placeholder_allocation.y = 0;
@@ -675,7 +675,7 @@ __realize (GtkWidget *widget)
   gtk_widget_set_realized (widget, TRUE);
 
   window = gdk_window_new_child (gtk_widget_get_parent_window (widget),
-                                 gtk_widget_get_events (widget) | GDK_ALL_EVENTS_MASK,
+                                 GDK_ALL_EVENTS_MASK,
                                  &allocation);
   gdk_window_set_user_data (window, widget);
   gtk_widget_set_window (widget, window);
@@ -734,7 +734,8 @@ __measure (GtkWidget      *widget,
 
       Foreach_Row
         int m, n;
-        gtk_widget_get_preferred_width (row, &m, &n);
+        gtk_widget_measure (row, GTK_ORIENTATION_HORIZONTAL, -1,
+                            &m, &n, NULL, NULL);
         min_width = MAX (min_width, m);
         nat_width = MAX (nat_width, n);
       }}
