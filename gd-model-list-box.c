@@ -554,12 +554,13 @@ items_changed_cb (GListModel *model,
 
 /* GtkWidget vfuncs {{{ */
 static void
-__size_allocate (GtkWidget *widget, GtkAllocation *allocation)
+__size_allocate (GtkWidget           *widget,
+                 const GtkAllocation *allocation,
+                 int                  baseline,
+                 GtkAllocation       *out_clip)
 {
   PRIV_DECL (widget);
   gboolean height_changed = allocation->height != gtk_widget_get_allocated_height (widget);
-
-  GTK_WIDGET_CLASS (gd_model_list_box_parent_class)->size_allocate (widget, allocation);
 
   if (priv->widgets->len > 0)
     {
@@ -585,7 +586,7 @@ __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
                             &h, NULL, NULL, NULL);
         child_alloc.y = y;
         child_alloc.height = h;
-        gtk_widget_size_allocate (row, &child_alloc);
+        gtk_widget_size_allocate (row, &child_alloc, -1, out_clip);
 
         y += h;
       }}
@@ -615,7 +616,7 @@ __size_allocate (GtkWidget *widget, GtkAllocation *allocation)
       placeholder_allocation.width = MAX (min_width, allocation->width);
       placeholder_allocation.height = MAX (min_height, allocation->height);
 
-      gtk_widget_size_allocate (priv->placeholder, &placeholder_allocation);
+      gtk_widget_size_allocate (priv->placeholder, &placeholder_allocation, -1, out_clip);
     }
 }
 
@@ -623,23 +624,13 @@ static void
 __snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
 {
   PRIV_DECL (widget);
-  GtkStyleContext *context;
   GtkAllocation alloc;
 
-  context = gtk_widget_get_style_context (widget);
   gtk_widget_get_allocation (widget, &alloc);
-
-  gtk_snapshot_render_background (snapshot,
-                                  context,
-                                  alloc.x,
-                                  alloc.y,
-                                  alloc.width,
-                                  alloc.height);
 
   gtk_snapshot_push_clip (snapshot,
                           &GRAPHENE_RECT_INIT(
-                            alloc.x,
-                            alloc.y,
+                            0, 0,
                             alloc.width,
                             alloc.height
                           ),
