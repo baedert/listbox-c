@@ -96,7 +96,7 @@ GtkSizeGroup *size_group2;
 
 GListModel *model;
 
-const guint N = 10000;
+const guint N = 10;
 
 
 static void
