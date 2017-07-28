@@ -96,7 +96,7 @@ GtkSizeGroup *size_group2;
 
 GListModel *model;
 
-const guint N = 10;
+const guint N = 20;
 
 
 static void
@@ -161,7 +161,7 @@ fill_func (gpointer   item,
   gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
 
 
-  label = g_strdup_printf ("Row %'u of %'u", data->item_index, data->model_size);
+  label = g_strdup_printf ("Row %'u of %'u", data->item_index + 1, data->model_size);
   gtk_label_set_label (GTK_LABEL (row->label1), label);
   gtk_label_set_markup (GTK_LABEL (row->label2), data->text);
   gtk_switch_set_active (GTK_SWITCH (row->_switch), data->on);
@@ -187,6 +187,38 @@ set_focus_cb (GtkWindow *window,
     g_message ("New focus widget: (NULL) NULL");
 }
 
+static gboolean
+scroll_cb (GtkWidget     *widget,
+           GdkFrameClock *frame_clock,
+           gpointer       user_data)
+{
+  GtkAdjustment *a = user_data;
+  double val = gtk_adjustment_get_value (a);
+  double max_val;
+
+  max_val = gtk_adjustment_get_upper (a) - gtk_adjustment_get_page_size (a);
+
+  if (val + 1.0 >= max_val)
+    return G_SOURCE_REMOVE;
+
+  gtk_adjustment_set_value (a, val + 1.0);
+
+  return G_SOURCE_CONTINUE;
+}
+
+static void
+scroll_button_clicked_cb (GtkButton *button,
+                          gpointer   user_data)
+{
+  GtkScrolledWindow *scroller = user_data;
+  GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment (scroller);
+
+  gtk_widget_add_tick_callback (GTK_WIDGET (scroller),
+                                scroll_cb,
+                                vadjustment,
+                                NULL);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -197,6 +229,8 @@ main (int argc, char **argv)
   GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
   GtkWidget *list = gd_model_list_box_new ();
   GtkWidget *placeholder= gtk_label_new ("NO ROWS \\o/");
+  GtkWidget *headerbar = gtk_header_bar_new ();
+  GtkWidget *scroll_button = gtk_button_new_with_label ("Scroll");
 
   g_signal_connect (window, "set-focus", G_CALLBACK (set_focus_cb), NULL);
 
@@ -216,7 +250,6 @@ main (int argc, char **argv)
       g_list_store_append (G_LIST_STORE (model), d);
     }
 
-
   gd_model_list_box_set_model (GD_MODEL_LIST_BOX (list), model);
   gd_model_list_box_set_fill_func (GD_MODEL_LIST_BOX (list), fill_func, NULL);
   gd_model_list_box_set_remove_func (GD_MODEL_LIST_BOX (list), remove_func, NULL);
@@ -226,6 +259,10 @@ main (int argc, char **argv)
 
   gtk_container_add (GTK_CONTAINER (scroller), list);
   gtk_container_add (GTK_CONTAINER (window), scroller);
+
+  gtk_window_set_titlebar (GTK_WINDOW (window), headerbar);
+  g_signal_connect (scroll_button, "clicked", G_CALLBACK (scroll_button_clicked_cb), scroller);
+  gtk_container_add (GTK_CONTAINER (headerbar), scroll_button);
 
   g_signal_connect (G_OBJECT (window), "delete-event", G_CALLBACK (gtk_main_quit), NULL);
   gtk_window_resize (GTK_WINDOW (window), 500, 400);
