@@ -151,15 +151,14 @@ fill_func (gpointer   item,
       row = GD_ROW_WIDGET (old_widget);
     }
 
-#if 0
+#if 1
   if (item_index > 9)
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 500);
   else
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 0);
-#endif
-
+#else
   gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
-
+#endif
 
   label = g_strdup_printf ("Row %'u of %'u", data->item_index + 1, data->model_size);
   gtk_label_set_label (GTK_LABEL (row->label1), label);
