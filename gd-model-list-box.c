@@ -227,21 +227,21 @@ configure_adjustment (GdModelListBox *box)
   int widget_height;
   int list_height;
   double cur_upper;
-  /*double cur_value;*/
   double page_size;
 
   widget_height = gtk_widget_get_allocated_height (GTK_WIDGET (box));
   list_height   = estimated_list_height (box, NULL, NULL);
   cur_upper     = gtk_adjustment_get_upper (priv->vadjustment);
   page_size     = gtk_adjustment_get_page_size (priv->vadjustment);
-  /*cur_value     = gtk_adjustment_get_value (priv->vadjustment);*/
 
-
-  if ((int)cur_upper != MAX (list_height, widget_height)) {
-    /*g_message ("New upper: %d (%d, %d)", MAX (list_height, widget_height), list_height, widget_height);*/
-    gtk_adjustment_set_upper (priv->vadjustment, MAX (list_height, widget_height));
-  } else if (list_height == 0)
-    gtk_adjustment_set_upper (priv->vadjustment, widget_height);
+  if ((int)cur_upper != MAX (list_height, widget_height))
+    {
+      gtk_adjustment_set_upper (priv->vadjustment, MAX (list_height, widget_height));
+    }
+  else if (list_height == 0)
+    {
+      gtk_adjustment_set_upper (priv->vadjustment, widget_height);
+    }
 
 
   if ((int)page_size != widget_height)
@@ -272,9 +272,11 @@ ensure_visible_widgets (GdModelListBox *box)
 
   g_assert_cmpint (priv->bin_y_diff, >=, 0);
   g_assert_cmpint (bin_height (box), >=, 0);
-  g_assert_cmpint (bin_y (box), <=, 0);
 
   rows_height = bin_height (box);
+
+
+  g_message ("-----------------------------------------------------------------");
 
   /* This "out of sight" case happens when the new value is so different from the old one
    * that we rather just remove all widgets and adjust the model_from/model_to values
@@ -290,7 +292,7 @@ ensure_visible_widgets (GdModelListBox *box)
       guint top_widget_index;
       int i;
 
-      /*g_message ("OUT OF SIGHT");*/
+      g_message ("OUT OF SIGHT");
 
       for (i = priv->widgets->len - 1; i >= 0; i --)
         remove_child_by_index (box, i);
@@ -357,10 +359,21 @@ ensure_visible_widgets (GdModelListBox *box)
   /* Add top widgets */
   {
     top_added = FALSE;
-    while (priv->model_from > 0 && bin_y (box) >= 0)
+    for (;;)
       {
         GtkWidget *new_widget;
         int min;
+
+        if (bin_y (box) <= 0)
+          {
+            break;
+          }
+
+        if (priv->model_from == 0)
+          {
+            break;
+          }
+
         priv->model_from --;
 
         new_widget = get_widget (box, priv->model_from);
@@ -378,25 +391,44 @@ ensure_visible_widgets (GdModelListBox *box)
   {
     bottom_removed = FALSE;
     int i = priv->widgets->len - 1;
-    for (; i >= 0; i --)
+    for (;;)
       {
-        GtkWidget *w = g_ptr_array_index (priv->widgets, i);
-        g_assert (w);
-        int y = bin_y (box) + row_y (box, i);
+        GtkWidget *w;
+        int y;
+        int w_height;
 
-        if (y > widget_height)
+        if (i <= 0)
           {
-            int w_height = requested_row_height (box, w);
-            remove_child_by_index (box, i);
-            rows_height -= w_height;
-            priv->model_to --;
-            bottom_removed = TRUE;
-            i--;
+            break;
           }
-        else
-          break;
+
+        y = bin_y (box) + row_y (box, i);
+
+        if (y < widget_height)
+          {
+            break;
+          }
+
+        g_message ("Removing widget %d with y %d and widget_height %d",
+                   i, y, widget_height);
+
+        w = g_ptr_array_index (priv->widgets, i);
+        g_assert (w);
+
+        w_height = requested_row_height (box, w);
+        remove_child_by_index (box, i);
+        rows_height -= w_height;
+        priv->model_to --;
+        bottom_removed = TRUE;
+
+        i--;
       }
   }
+
+
+  g_message ("bin_y_diff: %f", priv->bin_y_diff);
+  g_message ("bin_y now:  %d", bin_y (box));
+  g_message ("bin_height: %d, rows_height: %d", bin_height (box), rows_height);
 
 
   /* Insert bottom widgets */
@@ -408,7 +440,7 @@ ensure_visible_widgets (GdModelListBox *box)
         int min;
 
         /* If the widget is full anyway */
-        if (bin_y (box) + rows_height > widget_height)
+        if (bin_y (box) + rows_height >= widget_height)
           {
             break;
           }
@@ -420,6 +452,7 @@ ensure_visible_widgets (GdModelListBox *box)
           }
 
         g_message ("Inserting bottom widget for position %u at %u", priv->model_to, priv->widgets->len);
+        g_message ("bin_y: %d, rows_height: %d, widget_height: %d", bin_y (box), rows_height, widget_height);
         new_widget = get_widget (box, priv->model_to);
         insert_child_internal (box, new_widget, priv->widgets->len);
         min = requested_row_height (box, new_widget);
@@ -438,7 +471,10 @@ ensure_visible_widgets (GdModelListBox *box)
   if (bottom_removed) g_assert (!bottom_added);
   if (bottom_added)   g_assert (!bottom_removed);
 
-   configure_adjustment (box);
+  g_assert_cmpint (priv->bin_y_diff, >=, 0);
+  g_assert_cmpint (bin_y (box), <=, 0);
+
+  configure_adjustment (box);
 }
 
 static void
@@ -521,7 +557,7 @@ __size_allocate (GtkWidget           *widget,
         y += h;
       }}
 
-      configure_adjustment ((GdModelListBox *)widget);
+      /* configure_adjustment is being called from ensure_visible_widgets already */
     }
   else if (priv->placeholder)
     {
