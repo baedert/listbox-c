@@ -28,6 +28,8 @@ struct _GdModelListBox
   guint model_from;
   guint model_to;
   double bin_y_diff;
+
+  guint fuck: 1;
 };
 
 struct _GdModelListBoxClass

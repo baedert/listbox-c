@@ -17,33 +17,12 @@
 
 #include "gd-model-list-box.h"
 
-struct _GdModelListBoxselfate
-{
-  GtkAdjustment *hadjustment;
-  GtkAdjustment *vadjustment;
-
-  GPtrArray *widgets;
-  GPtrArray *pool;
-  GdModelListBoxRemoveFunc remove_func;
-  GdModelListBoxFillFunc fill_func;
-  gpointer fill_func_data;
-  gpointer remove_func_data;
-  GListModel *model;
-
-  guint model_from;
-  guint model_to;
-  double bin_y_diff;
-};
-
 typedef struct _GdModelListBoxselfate GdModelListBoxselfate;
 
 
 G_DEFINE_TYPE_WITH_CODE (GdModelListBox, gd_model_list_box, GTK_TYPE_WIDGET,
                          /*G_ADD_selfATE (GdModelListBox)*/
                          G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE, NULL));
-
-#define self_DECL(l) GdModelListBoxselfate *self = (gd_model_list_box_get_instance_selfate ((GdModelListBox *)l))
-#define self(l) ((GdModelListBoxselfate *)gd_model_list_box_get_instance_selfate ((GdModelListBox *)l))
 
 #define Foreach_Row {guint i; for (i = 0; i < self->widgets->len; i ++){ \
                        GtkWidget *row = g_ptr_array_index (self->widgets, i);
@@ -119,7 +98,7 @@ remove_child_by_index (GdModelListBox *self,
       self->remove_func (row, g_list_model_get_item (self->model, item_index));
     }
 
-  gtk_widget_unparent (row);
+  /*gtk_widget_unparent (row);*/
   gtk_widget_set_child_visible (g_ptr_array_index (self->widgets, index), FALSE);
   /* Can't use _fast for self->widgets, we need to keep the order. */
   g_ptr_array_remove_index (self->widgets, index);
@@ -227,6 +206,7 @@ configure_adjustment (GdModelListBox *self)
   double cur_upper;
   double cur_value;
   double page_size;
+  int new_value;
 
   widget_height = gtk_widget_get_allocated_height (GTK_WIDGET (self));
   list_height   = estimated_list_height (self);
@@ -239,6 +219,7 @@ configure_adjustment (GdModelListBox *self)
   if ((int)cur_upper != list_height)
     {
       gtk_adjustment_set_upper (self->vadjustment, list_height);
+      g_message ("Changing upper from %f to %d", cur_upper, list_height);
     }
   else if (list_height == 0)
     {
@@ -248,10 +229,23 @@ configure_adjustment (GdModelListBox *self)
   if ((int)page_size != widget_height)
     gtk_adjustment_set_page_size (self->vadjustment, widget_height);
 
-  /*if (cur_value > cur_upper - widget_height)*/
-    /*{*/
-      /*gtk_adjustment_set_value (self->vadjustment, cur_upper - widget_height);*/
-    /*}*/
+  new_value = MAX (0, list_height - widget_height);
+  if (cur_value > new_value)
+    {
+      g_message ("###############################################################");
+
+      self->fuck = TRUE;
+      g_message ("Adjusting value from %f to %d", cur_value, new_value);
+      g_message ("Old bin_y_diff: %f (bin_y: %d)", self->bin_y_diff, bin_y (self));
+      int old_bin_y = bin_y (self);
+      gtk_adjustment_set_value (self->vadjustment, new_value);
+      self->bin_y_diff -= (cur_value - new_value);
+      g_message ("New bin_y_diff: %f (bin_y: %d)", self->bin_y_diff, bin_y (self));
+      g_assert (bin_y (self) == old_bin_y);
+      self->fuck = FALSE;
+      /*g_abort();*/
+      g_message ("###############################################################");
+    }
 }
 
 static void
@@ -273,12 +267,8 @@ ensure_visible_widgets (GdModelListBox *self)
     return;
   }
 
-  if (!self->vadjustment)
+  if (!self->vadjustment || !self->model || g_list_model_get_n_items (self->model) == 0)
     return;
-
-  double upper_before = gtk_adjustment_get_upper (self->vadjustment);
-  double value_before = gtk_adjustment_get_value (self->vadjustment);
-  double page_size_before = gtk_adjustment_get_page_size (self->vadjustment);
 
   // TODO: This should use the "content height"
   widget_height = gtk_widget_get_allocated_height (widget);
@@ -304,43 +294,42 @@ ensure_visible_widgets (GdModelListBox *self)
       guint top_widget_index;
       int i;
 
-      /*g_message ("OUT OF SIGHT! bin_y: %d, bin_height; %d, widget_height: %d",*/
-                 /*bin_y (self), bin_height (self), widget_height);*/
-      /*g_message ("Value: %f, upper: %f", value, upper);*/
+      g_message ("OUT OF SIGHT! bin_y: %d, bin_height; %d, widget_height: %d",
+                 bin_y (self), bin_height (self), widget_height);
+      g_message ("Value: %f, upper: %f", value, upper);
 
       for (i = self->widgets->len - 1; i >= 0; i --)
         remove_child_by_index (self, i);
 
       g_assert (self->widgets->len == 0);
 
-      /* We do NOT subtract page_size here since we are interested in the row
-       * at the top of the widget. */
-      percentage = value / upper;
+      percentage = value / (upper - page_size);
 
       top_widget_index = (guint) (g_list_model_get_n_items (self->model) * percentage);
-      /*g_message ("top_widget_index: %u", top_widget_index);*/
+      g_message ("top_widget_index: %u (Percentage %f)", top_widget_index, percentage);
 
       if (top_widget_index > g_list_model_get_n_items (self->model))
         {
-          /* XXX Can this still happen? */
-          self->model_from = g_list_model_get_n_items (self->model);
-          self->model_to   = g_list_model_get_n_items (self->model);
-          self->bin_y_diff = value + page_size;
           g_assert (FALSE);
         }
       else
         {
           self->model_from = top_widget_index;
           self->model_to   = top_widget_index;
-          self->bin_y_diff = top_widget_index * avg_widget_height;
+          /*self->bin_y_diff = gtk_adjustment_get_value (self->vadjustment) + widget_height;*/
+          /*self->bin_y_diff = 0;//gtk_adjustment_get_value (self->vadjustment) + widget_height;*/
+
+          self->bin_y_diff = self->model_from * avg_widget_height;
         }
 
         g_assert (self->model_from <= g_list_model_get_n_items (self->model));
+        g_assert (self->model_from <= self->model_to);
         g_assert (self->model_to <= g_list_model_get_n_items (self->model));
         g_assert (bin_y (self) <= widget_height);
+        /*g_assert (bin_y (self) <= 0); Temporarily wrong*/
 
-        /*g_message ("After OOS: model_from: %d, model_to: %d, bin_y: %d, bin_height; %d",*/
-                   /*self->model_from, self->model_to, bin_y (self), bin_height (self));*/
+        g_message ("After OOS: model_from: %d, model_to: %d, bin_y: %d, bin_height; %d",
+                   self->model_from, self->model_to, bin_y (self), bin_height (self));
     }
 
   /* Remove top widgets */
@@ -358,7 +347,7 @@ ensure_visible_widgets (GdModelListBox *self)
             remove_child_by_index (self, i);
             self->model_from ++;
             top_removed ++;
-            /*g_message ("Removing from top");*/
+            g_message ("Removing from top");
 
             /* Do the first row again */
             i--;
@@ -386,7 +375,7 @@ ensure_visible_widgets (GdModelListBox *self)
 
         self->model_from --;
 
-        /*g_message ("Adding on top");*/
+        g_message ("Adding on top");
         new_widget = get_widget (self, self->model_from);
         g_assert (new_widget != NULL);
         insert_child_internal (self, new_widget, 0);
@@ -416,7 +405,7 @@ ensure_visible_widgets (GdModelListBox *self)
           {
             break;
           }
-        /*g_message ("Removing widget at bottom with y %d", y);*/
+        g_message ("Removing widget at bottom with y %d", y);
 
         w = g_ptr_array_index (self->widgets, i);
         g_assert (w);
@@ -447,8 +436,8 @@ ensure_visible_widgets (GdModelListBox *self)
             break;
           }
 
-        /*g_message ("Adding at bottom for model index %u. bin_y: %d, bin_height: %d", self->model_to,*/
-                   /*bin_y (self), bin_height (self));*/
+        g_message ("Adding at bottom for model index %u. bin_y: %d, bin_height: %d", self->model_to,
+                   bin_y (self), bin_height (self));
         new_widget = get_widget (self, self->model_to);
         insert_child_internal (self, new_widget, self->widgets->len);
 
@@ -457,6 +446,10 @@ ensure_visible_widgets (GdModelListBox *self)
       }
   }
 
+  g_message ("Top removed:    %d", top_removed);
+  g_message ("Top added:      %d", top_added);
+  g_message ("Bottom removed: %d", bottom_removed);
+  g_message ("Bottom added:   %d", bottom_added);
   if (top_removed    > 0) g_assert_cmpint (top_added,      ==, 0);
   if (top_added      > 0) g_assert_cmpint (top_removed,    ==, 0);
   if (bottom_removed > 0) g_assert_cmpint (bottom_added,   ==, 0);
@@ -467,46 +460,16 @@ ensure_visible_widgets (GdModelListBox *self)
   g_assert_cmpint (self->widgets->len, ==, self->model_to - self->model_from);
 
   configure_adjustment (self);
-  /*g_message ("AFTER: Value: %f, upper; %f",*/
-             /*gtk_adjustment_get_value (self->vadjustment),*/
-             /*gtk_adjustment_get_upper (self->vadjustment));*/
-
-  {
-    /*double upper_after = gtk_adjustment_get_upper (self->vadjustment);*/
-    /*double page_size_after = gtk_adjustment_get_page_size (self->vadjustment);*/
-
-    /*if (upper_before != upper_after)*/
-      /*{*/
-        /* The value of the vadjustment makes only sense considering its upper value.
-         * The (new) value is for the upper_before, not the upper_after, which might be a lot
-         * less or a lot more. If the upper changed, we here adapt the value by scaling it
-         * to the new upper_after */
-        /*g_message ("Upper diff: %f/%f", upper_before, upper_after);*/
-        /*g_message ("upper_before: %f", upper_before);*/
-        /*g_message ("upper_after : %f", upper_after);*/
-        /*g_message ("page_size   : %f", gtk_adjustment_get_page_size (self->vadjustment));*/
-
-        /*double percent_before = value_before / (upper_before - page_size_before);*/
-
-        /*double new_value = percent_before * (upper_after - page_size_after);*/
-        /*g_message ("new_value: %f", new_value);*/
-
-        /*self->fuck = TRUE;*/
-        /*gtk_adjustment_set_value (self->vadjustment, new_value);*/
-        /*self->fuck = FALSE;*/
-
-        /*g_assert (0);*/
-      /*}*/
-  }
 }
 
 static void
-value_changed_cb (GtkAdjustment *adjustment, gpointer user_data)
+value_changed_cb (GtkAdjustment *adjustment,
+                  gpointer       user_data)
 {
-
+  GdModelListBox *self = GD_MODEL_LIST_BOX (user_data);
   g_message (__FUNCTION__);
-  /*if (self->fuck)*/
-    /*return;*/
+  if (self->fuck)
+    return;
 
   g_message ("QUEUE ALLOCATE");
   /* ensure_visible_widgets will be called from size_allocate */
@@ -555,16 +518,18 @@ __size_allocate (GtkWidget           *widget,
 
   g_message (__FUNCTION__);
 
+
+  ensure_visible_widgets ((GdModelListBox *)widget);
+
   if (self->widgets->len > 0)
     {
       GtkAllocation child_alloc;
       int y;
 
-      /*g_message ("From %s", __FUNCTION__);*/
-      ensure_visible_widgets ((GdModelListBox *)widget);
+      g_message ("From %s", __FUNCTION__);
 
       /* Now actually allocate sizes to all the rows */
-      y = bin_y ((GdModelListBox *)widget);
+      y = bin_y (self);
 
       child_alloc.x = 0;
       child_alloc.width = allocation->width;
@@ -576,6 +541,12 @@ __size_allocate (GtkWidget           *widget,
                             &h, NULL, NULL, NULL);
         child_alloc.y = y;
         child_alloc.height = h;
+        g_message ("Allocation for row %u of %u: %d, %d, %d, %d",
+                   i, self->widgets->len,
+                   child_alloc.x,
+                   child_alloc.y,
+                   child_alloc.width,
+                   child_alloc.height);
         gtk_widget_size_allocate (row, &child_alloc, -1, out_clip);
 
         y += h;
@@ -615,8 +586,7 @@ __map (GtkWidget *widget)
 {
   GTK_WIDGET_CLASS (gd_model_list_box_parent_class)->map (widget);
 
-  /*g_message ("From %s", __FUNCTION__);*/
-  ensure_visible_widgets ((GdModelListBox *) widget);
+  /*ensure_visible_widgets ((GdModelListBox *) widget);*/
 }
 
 static void
@@ -645,8 +615,6 @@ __measure (GtkWidget      *widget,
 
       *minimum = min_width;
       *natural = nat_width;
-
-      /*g_message ("Measured width: %d, %d", min_width, nat_width);*/
     }
   else /* VERTICAL */
     {
@@ -781,8 +749,8 @@ gd_model_list_box_get_model (GdModelListBox *self)
 static void
 gd_model_list_box_class_init (GdModelListBoxClass *class)
 {
-  GObjectClass      *object_class    = G_OBJECT_CLASS (class);
-  GtkWidgetClass    *widget_class    = GTK_WIDGET_CLASS (class);
+  GObjectClass      *object_class = G_OBJECT_CLASS (class);
+  GtkWidgetClass    *widget_class = GTK_WIDGET_CLASS (class);
 
   object_class->set_property = __set_property;
   object_class->get_property = __get_property;

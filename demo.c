@@ -97,7 +97,7 @@ GtkSizeGroup *size_group2;
 
 GListModel *model;
 
-const guint N = 30;
+const guint N = 8;
 
 
 static void
@@ -237,6 +237,19 @@ to_bottom_button_clicked_cb (GtkButton *button,
 }
 
 static void
+to_top_button_clicked_cb (GtkButton *button,
+                          gpointer   user_data)
+{
+  GtkScrolledWindow *scroller = user_data;
+  GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment (scroller);
+
+  g_message ("################################### UP CLICKED");
+  gtk_adjustment_set_value (vadjustment, 0);
+}
+
+
+
+static void
 realized_cb (GtkWidget *widget)
 {
   GdkFrameClock *frame_clock;
@@ -265,6 +278,7 @@ main (int argc, char **argv)
   GtkWidget *headerbar = gtk_header_bar_new ();
   GtkWidget *scroll_button = gtk_button_new_with_label ("Scroll");
   GtkWidget *to_bottom_button = gtk_button_new_with_label ("To Bottom");
+  GtkWidget *to_top_button = gtk_button_new_with_label ("To Top");
 
   g_signal_connect (window, "set-focus", G_CALLBACK (set_focus_cb), NULL);
 
@@ -298,6 +312,8 @@ main (int argc, char **argv)
   gtk_container_add (GTK_CONTAINER (headerbar), scroll_button);
   g_signal_connect (to_bottom_button, "clicked", G_CALLBACK (to_bottom_button_clicked_cb), scroller);
   gtk_container_add (GTK_CONTAINER (headerbar), to_bottom_button);
+  g_signal_connect (to_top_button, "clicked", G_CALLBACK (to_top_button_clicked_cb), scroller);
+  gtk_container_add (GTK_CONTAINER (headerbar), to_top_button);
 
 
   g_signal_connect (G_OBJECT (window), "delete-event", G_CALLBACK (gtk_main_quit), NULL);

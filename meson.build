@@ -7,7 +7,6 @@ sysprof_dep = dependency('sysprof-2')
 demo_sources = files(
   'gd-model-list-box.c',
   'demo.c',
-  'profiling.c',
 )
 
 executable(
