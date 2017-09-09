@@ -1,5 +1,6 @@
 #include <gtk/gtk.h>
 #include "gd-model-list-box.h"
+/*#include "profiling.h"*/
 
 /* Test class {{{ */
 struct _GdData
@@ -96,7 +97,7 @@ GtkSizeGroup *size_group2;
 
 GListModel *model;
 
-const guint N = 20;
+const guint N = 30;
 
 
 static void
@@ -111,6 +112,8 @@ static void
 remove_button_clicked_cb (GtkButton *source, gpointer user_data)
 {
   guint item_index = GPOINTER_TO_UINT (user_data);
+
+  g_message ("#####################################################");
 
   g_message ("Removing item at position %u", item_index);
 
@@ -152,7 +155,7 @@ fill_func (gpointer   item,
     }
 
 #if 1
-  if (item_index > 9)
+  if (item_index < N / 2)
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 500);
   else
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
@@ -218,22 +221,55 @@ scroll_button_clicked_cb (GtkButton *button,
                                 NULL);
 }
 
+static void
+to_bottom_button_clicked_cb (GtkButton *button,
+                             gpointer   user_data)
+{
+  GtkScrolledWindow *scroller = user_data;
+  GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment (scroller);
+
+  g_message ("######### DOWN CLICKED ########");
+  /* Obvious way of scrolling to the very bottom of a GtkAdjustment.
+   * This case is interesting because doing so might change the upper
+   * of the adjustment and the listbox has to compensate for that. */
+  gtk_adjustment_set_value (vadjustment,
+                            gtk_adjustment_get_upper (vadjustment) - gtk_adjustment_get_page_size (vadjustment));
+}
+
+static void
+realized_cb (GtkWidget *widget)
+{
+  GdkFrameClock *frame_clock;
+
+  g_assert (GTK_IS_WINDOW (widget));
+
+  frame_clock = gtk_widget_get_frame_clock (widget);
+  g_assert (frame_clock != NULL);
+
+  /*add_frame_source (frame_clock);*/
+
+  /*start_profiling ();*/
+}
+
 int
 main (int argc, char **argv)
 {
   guint i;
   gtk_init ();
 
+  /*create_profiler ();*/
+
   GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
   GtkWidget *list = gd_model_list_box_new ();
-  GtkWidget *placeholder= gtk_label_new ("NO ROWS \\o/");
   GtkWidget *headerbar = gtk_header_bar_new ();
   GtkWidget *scroll_button = gtk_button_new_with_label ("Scroll");
+  GtkWidget *to_bottom_button = gtk_button_new_with_label ("To Bottom");
 
   g_signal_connect (window, "set-focus", G_CALLBACK (set_focus_cb), NULL);
 
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+  gtk_scrolled_window_set_overlay_scrolling (GTK_SCROLLED_WINDOW (scroller), FALSE);
 
   size_group1 = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
   size_group2 = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
@@ -253,19 +289,26 @@ main (int argc, char **argv)
   gd_model_list_box_set_fill_func (GD_MODEL_LIST_BOX (list), fill_func, NULL);
   gd_model_list_box_set_remove_func (GD_MODEL_LIST_BOX (list), remove_func, NULL);
 
-  gd_model_list_box_set_placeholder (GD_MODEL_LIST_BOX (list), placeholder);
-
-
   gtk_container_add (GTK_CONTAINER (scroller), list);
   gtk_container_add (GTK_CONTAINER (window), scroller);
 
+  gtk_header_bar_set_show_close_button (GTK_HEADER_BAR (headerbar), TRUE);
   gtk_window_set_titlebar (GTK_WINDOW (window), headerbar);
   g_signal_connect (scroll_button, "clicked", G_CALLBACK (scroll_button_clicked_cb), scroller);
   gtk_container_add (GTK_CONTAINER (headerbar), scroll_button);
+  g_signal_connect (to_bottom_button, "clicked", G_CALLBACK (to_bottom_button_clicked_cb), scroller);
+  gtk_container_add (GTK_CONTAINER (headerbar), to_bottom_button);
+
 
   g_signal_connect (G_OBJECT (window), "delete-event", G_CALLBACK (gtk_main_quit), NULL);
-  gtk_window_resize (GTK_WINDOW (window), 500, 400);
+  g_signal_connect (G_OBJECT (window), "realize", G_CALLBACK (realized_cb), NULL);
+
+  gtk_window_resize (GTK_WINDOW (window), 520, 400);
   gtk_widget_show (window);
   gtk_main ();
+
+
+  /*stop_profiling ();*/
+
   return 0;
 }
