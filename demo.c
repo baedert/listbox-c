@@ -62,6 +62,7 @@ static void gd_row_widget_init (GdRowWidget *d)
   d->stack = gtk_stack_new ();
   d->remove_button = gtk_button_new_from_icon_name ("list-remove-symbolic", GTK_ICON_SIZE_BUTTON);
 
+  /*gtk_label_set_line_wrap (GTK_LABEL (d->label2), TRUE);*/
   gtk_label_set_ellipsize (GTK_LABEL (d->label2), PANGO_ELLIPSIZE_END);
   gtk_widget_set_hexpand (d->label2, TRUE);
   gtk_widget_set_halign (d->label2, GTK_ALIGN_START);
@@ -156,9 +157,9 @@ fill_func (gpointer   item,
 
 #if 1
   if (item_index < N / 2)
-    gtk_widget_set_size_request (GTK_WIDGET (row), -1, 500);
-  else
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
+  else
+    gtk_widget_set_size_request (GTK_WIDGET (row), -1, 400);
 #else
   gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
 #endif
@@ -299,12 +300,11 @@ main (int argc, char **argv)
 
   g_signal_connect (G_OBJECT (window), "delete-event", G_CALLBACK (gtk_main_quit), NULL);
 
-  gtk_window_resize (GTK_WINDOW (window), 520, 400);
+  gtk_window_resize (GTK_WINDOW (window), 700, 400);
   gtk_widget_show (window);
   gtk_main ();
 
-
-  /*stop_profiling ();*/
+  gtk_widget_destroy (window);
 
   return 0;
 }

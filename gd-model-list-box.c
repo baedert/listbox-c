@@ -496,7 +496,8 @@ ensure_visible_widgets (GdModelListBox *self)
   if ((int)new_upper != (int)upper_before)
   /*if (value > new_upper - widget_height)*/
     {
-       g_message ("%f > %f!", value, new_upper - widget_height);
+      g_message ("%f != %f", new_upper, upper_before);
+       /*g_message ("%f > %f!", value, new_upper - widget_height);*/
       g_message ("Value: %f, old upper: %f, new upper: %f, page_size: %d", value, upper_before, new_upper, widget_height);
       /*g_message ("bin_y: %d", bin_y (self)); // <- Negative!*/
       /*g_message ("model_from: %u", self->model_from);*/
@@ -740,6 +741,8 @@ __finalize (GObject *obj)
 {
   GdModelListBox *self = GD_MODEL_LIST_BOX (obj);
   guint i;
+
+  g_message ("LISTBOX FINALIZE. Pool: %u, widgets: %u", self->pool->len, self->widgets->len);
 
   for (i = 0; i < self->pool->len; i ++)
     gtk_widget_unparent (g_ptr_array_index (self->pool, i));
