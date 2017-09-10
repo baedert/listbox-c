@@ -58,10 +58,10 @@ get_widget (GdModelListBox *self, guint index)
 
   g_assert (GTK_IS_WIDGET (new_widget));
 
-  if (gtk_widget_get_parent (new_widget) == NULL)
-    gtk_widget_set_parent (new_widget, GTK_WIDGET (self));
-  else
-    g_assert (gtk_widget_get_parent (new_widget) == GTK_WIDGET (self));
+  /*if (gtk_widget_get_parent (new_widget) == NULL)*/
+    /*gtk_widget_set_parent (new_widget, GTK_WIDGET (self));*/
+  /*else*/
+    /*g_assert (gtk_widget_get_parent (new_widget) == GTK_WIDGET (self));*/
 
   return new_widget;
 }
