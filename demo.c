@@ -203,7 +203,7 @@ scroll_cb (GtkWidget     *widget,
   if (val + 1.0 >= max_val)
     return G_SOURCE_REMOVE;
 
-  gtk_adjustment_set_value (a, val + 1.0);
+  gtk_adjustment_set_value (a, val + 20.0);
 
   return G_SOURCE_CONTINUE;
 }
@@ -247,30 +247,11 @@ to_top_button_clicked_cb (GtkButton *button,
   gtk_adjustment_set_value (vadjustment, 0);
 }
 
-
-
-static void
-realized_cb (GtkWidget *widget)
-{
-  GdkFrameClock *frame_clock;
-
-  g_assert (GTK_IS_WINDOW (widget));
-
-  frame_clock = gtk_widget_get_frame_clock (widget);
-  g_assert (frame_clock != NULL);
-
-  /*add_frame_source (frame_clock);*/
-
-  /*start_profiling ();*/
-}
-
 int
 main (int argc, char **argv)
 {
   guint i;
   gtk_init ();
-
-  /*create_profiler ();*/
 
   GtkWidget *window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
@@ -317,7 +298,6 @@ main (int argc, char **argv)
 
 
   g_signal_connect (G_OBJECT (window), "delete-event", G_CALLBACK (gtk_main_quit), NULL);
-  g_signal_connect (G_OBJECT (window), "realize", G_CALLBACK (realized_cb), NULL);
 
   gtk_window_resize (GTK_WINDOW (window), 520, 400);
   gtk_widget_show (window);
