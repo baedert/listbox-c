@@ -13,6 +13,9 @@ executable(
   'demo',
   sources: demo_sources,
   dependencies: [gtk_dep, sysprof_dep],
+  c_args: [
+    '-Werror=implicit-function-declaration'
+  ]
 )
 
 

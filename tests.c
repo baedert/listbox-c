@@ -216,7 +216,7 @@ overscroll ()
   g_assert_cmpint ((int)gtk_adjustment_get_upper (vadjustment), ==, 20 * ROW_HEIGHT * 10);
 
   // Lets scroll to the very bottom
-  g_message ("-------------------------------------------------");
+  /*g_message ("-------------------------------------------------");*/
   double new_value = gtk_adjustment_get_upper (vadjustment) - gtk_adjustment_get_page_size (vadjustment);
   gtk_adjustment_set_value (vadjustment, new_value);
 
@@ -226,7 +226,7 @@ overscroll ()
   // Same size as before, we just want to execute the listbox's size-allocate, which
   // works since changing the adjustment value just means a queue_allocate
   gtk_widget_size_allocate (listbox, &fake_alloc, -1, &fake_clip);
-  g_message ("-------------------------------------------------");
+  /*g_message ("-------------------------------------------------");*/
 
   // This will reconfigure the adjustment, now with all small rows
   g_assert_cmpint ((int)gtk_adjustment_get_upper (vadjustment), ==, 20 * ROW_HEIGHT);
@@ -266,6 +266,111 @@ overscroll ()
   g_assert_cmpint (row_alloc.y, ==, gtk_widget_get_allocated_height (listbox) - ROW_HEIGHT);
 }
 
+static void
+scrolling ()
+{
+  GtkWidget *listbox = gd_model_list_box_new ();
+  GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
+  GListStore *store = g_list_store_new (GTK_TYPE_LABEL); // Shrug
+  int min, nat;
+  GtkAllocation fake_alloc;
+  GtkAllocation fake_clip;
+  GtkAdjustment *vadjustment;
+  int i;
+
+  gtk_container_add (GTK_CONTAINER (scroller), listbox);
+  g_object_ref_sink (G_OBJECT (scroller));
+
+  vadjustment = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (scroller));
+
+  g_assert (gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (listbox)) == vadjustment);
+
+  // No viewport in between
+  g_assert (gtk_widget_get_parent (listbox) == scroller);
+  g_assert (GTK_IS_SCROLLABLE (listbox));
+
+  // Empty model
+  gtk_widget_measure (listbox, GTK_ORIENTATION_VERTICAL, -1, &min, &nat, NULL, NULL);
+  g_assert_cmpint (min, ==, 1); // XXX Widgets still have a min size of 1
+  g_assert_cmpint (nat, ==, 1);
+
+  gd_model_list_box_set_fill_func (GD_MODEL_LIST_BOX (listbox), label_from_label, NULL);
+  gd_model_list_box_set_model (GD_MODEL_LIST_BOX (listbox), G_LIST_MODEL (store));
+
+  // First 10 large rows
+  for (i = 0; i < 10; i ++)
+    {
+      GtkWidget *w = gtk_label_new ("FOO!");
+      g_object_set_data (G_OBJECT (w), "height", GINT_TO_POINTER (ROW_HEIGHT * 10));
+      g_list_store_append (store, w);
+    }
+
+  // Now 10 smaller ones
+  for (i = 0; i < 10; i ++)
+    {
+      GtkWidget *w = gtk_label_new ("FOO!");
+      g_object_set_data (G_OBJECT (w), "height", GINT_TO_POINTER (ROW_HEIGHT));
+      g_list_store_append (store, w);
+    }
+
+  // Note that the 10 large rows are plenty enough to cover the entire widget allocation
+  // we are about to use, so only they will affect the estimated ilst height, not the
+  // smaller ones.
+  //
+  gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
+  fake_alloc.x = 0;
+  fake_alloc.y = 0;
+  fake_alloc.width = MAX (min, 300);
+  fake_alloc.height = 500;
+  gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
+
+  // We should have configured the adjustment by now, which will
+  // result in 20 * (ROW_HEIGHT * 10) as the estimated upper
+  g_assert_cmpint ((int)gtk_adjustment_get_upper (vadjustment), ==, 20 * ROW_HEIGHT * 10);
+
+
+  /* Just scroll to the bottom and check that none of the assertions
+   * in GdModelListBox itself trigger. */
+  while (gtk_adjustment_get_value (vadjustment) <
+         gtk_adjustment_get_upper (vadjustment) - gtk_adjustment_get_page_size (vadjustment))
+    {
+      double v = gtk_adjustment_get_value (vadjustment);
+
+      gtk_adjustment_set_value (vadjustment, v + 1.0);
+
+      gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
+      gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
+    }
+  // We are now at the bottom, so...
+  g_assert_cmpint (GD_MODEL_LIST_BOX (listbox)->model_to, ==, g_list_model_get_n_items (G_LIST_MODEL (store)));
+  GtkWidget *last_row = g_ptr_array_index (GD_MODEL_LIST_BOX (listbox)->widgets,
+                                           GD_MODEL_LIST_BOX (listbox)->widgets->len - 1);
+  g_assert_nonnull (last_row);
+  g_assert (gtk_widget_get_parent (last_row) == listbox);
+  GtkAllocation row_alloc;
+  gtk_widget_get_allocation (last_row, &row_alloc);
+  g_assert_cmpint (row_alloc.y, ==, gtk_widget_get_allocated_height (listbox) - ROW_HEIGHT);
+
+
+  // And up again...
+  while (gtk_adjustment_get_value (vadjustment) > 0)
+    {
+      double v = gtk_adjustment_get_value (vadjustment);
+
+      gtk_adjustment_set_value (vadjustment, v - 1.0);
+
+      gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
+      gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
+    }
+  // And now at the top, so...
+  g_assert_cmpint (GD_MODEL_LIST_BOX (listbox)->model_from, ==, 0);
+  last_row = g_ptr_array_index (GD_MODEL_LIST_BOX (listbox)->widgets, 0);
+  g_assert_nonnull (last_row);
+  g_assert (gtk_widget_get_parent (last_row) == listbox);
+  gtk_widget_get_allocation (last_row, &row_alloc);
+  g_assert_cmpint (row_alloc.y, ==, 0);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -274,6 +379,7 @@ main (int argc, char **argv)
 
   g_test_add_func ("/listbox/simple", simple);
   g_test_add_func ("/listbox/overscroll", overscroll);
+  g_test_add_func ("/listbox/scrolling", scrolling);
 
   return g_test_run ();
 }

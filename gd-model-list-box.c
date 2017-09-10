@@ -131,7 +131,7 @@ row_y (GdModelListBox *self,
 }
 
 static int
-estimated_widget_height (GdModelListBox *self)
+estimated_row_height (GdModelListBox *self)
 {
   int avg_widget_height = 0;
 
@@ -181,7 +181,7 @@ estimated_list_height (GdModelListBox *self)
   int bottom_widgets;
   int exact_height = 0;
 
-  avg_height = estimated_widget_height (self);
+  avg_height = estimated_row_height (self);
   top_widgets = self->model_from;
   bottom_widgets = g_list_model_get_n_items (self->model) - self->model_to;
 
@@ -198,20 +198,49 @@ estimated_list_height (GdModelListBox *self)
          (bottom_widgets * avg_height);
 }
 
+/**
+ * When we set the vadjustment value from within this widget, we need to care about two things:
+ *   
+ *   1) Block the signal handler. It's mostly harmless but we don't want to unnecessarily
+ *      redo things and we especially don't want to call queue_allocate or even queue_resize
+ *      during size-allocate.
+ *
+ *   2) self->bin_y_diff depends on the adjustment value, so if we manually change the adjustment
+ *      value, we also need to update self->bin_y_diff. This should happen in such a way that
+ *      bin_y (self) returns the same value before and after setting the adjustment value
+ *      and bin_y_diff.
+ */
+static void
+set_vadjustment_value (GdModelListBox *self,
+                       double          new_value)
+{
+  int old_bin_y = bin_y (self);
+  double cur_value = gtk_adjustment_get_value (self->vadjustment);
+
+  g_message ("%s: Adjusting value from %f to %f", __FUNCTION__, cur_value, new_value);
+  g_signal_handler_block (self->vadjustment,
+                          self->vadjustment_value_changed_id);
+  gtk_adjustment_set_value (self->vadjustment, new_value);
+  g_signal_handler_unblock (self->vadjustment,
+                            self->vadjustment_value_changed_id);
+  g_assert_cmpint ((int)new_value, ==, (int)gtk_adjustment_get_value (self->vadjustment));
+  g_message ("bin_y_diff: %f, cur_value: %f, new_value: %f",
+             self->bin_y_diff, cur_value, new_value);
+  self->bin_y_diff -= (cur_value - new_value);
+  g_assert_cmpint (bin_y (self), ==, old_bin_y);
+}
+
 static void
 configure_adjustment (GdModelListBox *self)
 {
   int widget_height;
   int list_height;
   double cur_upper;
-  double cur_value;
   double page_size;
-  int new_value;
 
   widget_height = gtk_widget_get_allocated_height (GTK_WIDGET (self));
   list_height   = estimated_list_height (self);
   cur_upper     = gtk_adjustment_get_upper (self->vadjustment);
-  cur_value     = gtk_adjustment_get_value (self->vadjustment);
   page_size     = gtk_adjustment_get_page_size (self->vadjustment);
 
   /*g_message ("%s: Estimated list height: %d", __FUNCTION__, list_height);*/
@@ -229,23 +258,28 @@ configure_adjustment (GdModelListBox *self)
   if ((int)page_size != widget_height)
     gtk_adjustment_set_page_size (self->vadjustment, widget_height);
 
+  gtk_adjustment_set_lower (self->vadjustment, 0.0);
+
+#if 0
   new_value = MAX (0, list_height - widget_height);
   if (cur_value > new_value)
     {
       g_message ("###############################################################");
 
-      self->fuck = TRUE;
       g_message ("Adjusting value from %f to %d", cur_value, new_value);
-      g_message ("Old bin_y_diff: %f (bin_y: %d)", self->bin_y_diff, bin_y (self));
+      /*g_message ("Old bin_y_diff: %f (bin_y: %d)", self->bin_y_diff, bin_y (self));*/
       int old_bin_y = bin_y (self);
+      g_signal_handler_block (self->vadjustment,
+                              self->vadjustment_value_changed_id);
       gtk_adjustment_set_value (self->vadjustment, new_value);
+      g_signal_handler_unblock (self->vadjustment,
+                                self->vadjustment_value_changed_id);
       self->bin_y_diff -= (cur_value - new_value);
-      g_message ("New bin_y_diff: %f (bin_y: %d)", self->bin_y_diff, bin_y (self));
+      /*g_message ("New bin_y_diff: %f (bin_y: %d)", self->bin_y_diff, bin_y (self));*/
       g_assert (bin_y (self) == old_bin_y);
-      self->fuck = FALSE;
-      /*g_abort();*/
       g_message ("###############################################################");
     }
+#endif
 }
 
 static void
@@ -260,14 +294,9 @@ ensure_visible_widgets (GdModelListBox *self)
 
   g_message (__FUNCTION__);
 
-  // TODO: Temporarily disabled since it doesn't work in unit tests
-  //       -> just remove it?
-  if (!gtk_widget_get_mapped (widget) && FALSE) {
-    g_message ("%s: Not mapped!", __FUNCTION__);
-    return;
-  }
-
-  if (!self->vadjustment || !self->model || g_list_model_get_n_items (self->model) == 0)
+  if (!self->vadjustment ||
+      !self->model ||
+      g_list_model_get_n_items (self->model) == 0)
     return;
 
   // TODO: This should use the "content height"
@@ -275,6 +304,7 @@ ensure_visible_widgets (GdModelListBox *self)
 
   g_assert_cmpint (self->bin_y_diff, >=, 0);
   g_assert_cmpint (bin_height (self), >=, 0);
+  double upper_before = estimated_list_height (self);
 
   /*g_message ("-------------------------------------");*/
 
@@ -286,7 +316,7 @@ ensure_visible_widgets (GdModelListBox *self)
   if (bin_y (self) + bin_height (self) < 0 ||
       bin_y (self) >= widget_height)
     {
-      int avg_widget_height = estimated_widget_height (self);
+      int avg_row_height = estimated_row_height (self);
       double percentage;
       double value = gtk_adjustment_get_value (self->vadjustment);
       double upper = gtk_adjustment_get_upper (self->vadjustment);
@@ -319,7 +349,7 @@ ensure_visible_widgets (GdModelListBox *self)
           /*self->bin_y_diff = gtk_adjustment_get_value (self->vadjustment) + widget_height;*/
           /*self->bin_y_diff = 0;//gtk_adjustment_get_value (self->vadjustment) + widget_height;*/
 
-          self->bin_y_diff = self->model_from * avg_widget_height;
+          self->bin_y_diff = self->model_from * avg_row_height;
         }
 
         g_assert (self->model_from <= g_list_model_get_n_items (self->model));
@@ -459,6 +489,41 @@ ensure_visible_widgets (GdModelListBox *self)
   g_assert_cmpint (bin_y (self), <=, 0);
   g_assert_cmpint (self->widgets->len, ==, self->model_to - self->model_from);
 
+  /*
+   * The configure_adjustment call will adjust the adjustment value if it's larger than the adjustment
+   * upper. BUT the assumption here is the we scrolled to the end, to the new value will simply be
+   * upper - page_size, which is wrong since it's value > upper - page_size because the upper changed
+   * as a result of us adding/removing widgets.
+   *
+   * We need to handle this here, separately.
+   */
+  double value = gtk_adjustment_get_value (self->vadjustment);
+  double new_upper = estimated_list_height (self);
+
+  if ((int)new_upper != (int)upper_before)
+  /*if (value > new_upper - widget_height)*/
+    {
+       g_message ("%f > %f!", value, new_upper - widget_height);
+      g_message ("Value: %f, old upper: %f, new upper: %f, page_size: %d", value, upper_before, new_upper, widget_height);
+      /*g_message ("bin_y: %d", bin_y (self)); // <- Negative!*/
+      /*g_message ("model_from: %u", self->model_from);*/
+
+      int cur_bin_y = bin_y (self);
+      /*g_message ("Estimated row height: %d", estimated_row_height (self));*/
+      /*g_message ("Rows: %u", g_list_model_get_n_items (self->model));*/
+      /*g_message ("bin_height: %d", bin_height (self));*/
+      /*double upper_rest = new_upper - bin_height (self);*/
+      /*g_message ("upper_rest: %f", upper_rest);*/
+      /*guint rows_above = self->model_from;*/
+      /*g_message ("rows_above: %u", rows_above);*/
+      int new_value = (self->model_from * estimated_row_height (self)) - cur_bin_y;
+      new_value = MIN (new_value, new_upper - widget_height);
+      new_value = MAX (new_value, 0);
+
+      gtk_adjustment_set_upper (self->vadjustment, new_upper);
+      set_vadjustment_value (self, new_value);
+    }
+
   configure_adjustment (self);
 }
 
@@ -466,13 +531,10 @@ static void
 value_changed_cb (GtkAdjustment *adjustment,
                   gpointer       user_data)
 {
-  GdModelListBox *self = GD_MODEL_LIST_BOX (user_data);
   g_message (__FUNCTION__);
-  if (self->fuck)
-    return;
-
   g_message ("QUEUE ALLOCATE");
   /* ensure_visible_widgets will be called from size_allocate */
+  g_assert (GTK_IS_WIDGET (user_data));
   gtk_widget_queue_allocate (user_data);
 }
 
@@ -639,10 +701,14 @@ __set_property (GObject      *object,
         g_set_object (&self->hadjustment, g_value_get_object (value));
         break;
       case PROP_VADJUSTMENT:
+        // TODO: Disconnect from ::value-changed of the current vadjustment
         g_set_object (&self->vadjustment, g_value_get_object (value));
         if (g_value_get_object (value))
-          g_signal_connect (G_OBJECT (self->vadjustment), "value-changed",
-                            G_CALLBACK (value_changed_cb), object);
+          {
+            self->vadjustment_value_changed_id =
+              g_signal_connect (G_OBJECT (self->vadjustment), "value-changed",
+                                G_CALLBACK (value_changed_cb), object);
+          }
         break;
       case PROP_HSCROLL_POLICY:
       case PROP_VSCROLL_POLICY:
