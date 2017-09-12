@@ -8,7 +8,8 @@ typedef GtkWidget * (*GdModelListBoxFillFunc)   (gpointer  item,
                                                  guint      item_index,
                                                  gpointer   user_data);
 typedef void        (*GdModelListBoxRemoveFunc) (GtkWidget *widget,
-                                                 gpointer   item);
+                                                 gpointer   item,
+                                                 gpointer   user_data);
 
 struct _GdModelListBox
 {
@@ -29,6 +30,8 @@ struct _GdModelListBox
   guint model_from;
   guint model_to;
   double bin_y_diff;
+
+  double last_value;
 };
 
 struct _GdModelListBoxClass

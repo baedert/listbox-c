@@ -35,7 +35,7 @@ label_from_label (gpointer  item,
 
 
 static void
-simple ()
+simple (void)
 {
   GtkWidget *listbox = gd_model_list_box_new ();
   GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
@@ -154,7 +154,7 @@ simple ()
  * very bottom of the listbox.
  */
 static void
-overscroll ()
+overscroll (void)
 {
   GtkWidget *listbox = gd_model_list_box_new ();
   GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
@@ -267,7 +267,7 @@ overscroll ()
 }
 
 static void
-scrolling ()
+scrolling (void)
 {
   GtkWidget *listbox = gd_model_list_box_new ();
   GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
@@ -371,6 +371,97 @@ scrolling ()
   g_assert_cmpint (row_alloc.y, ==, 0);
 }
 
+static void
+overscroll_top (void)
+{
+  GtkWidget *listbox = gd_model_list_box_new ();
+  GtkWidget *scroller = gtk_scrolled_window_new (NULL, NULL);
+  GListStore *store = g_list_store_new (GTK_TYPE_LABEL); // Shrug
+  int min, nat;
+  GtkAllocation fake_alloc;
+  GtkAllocation fake_clip;
+  GtkAdjustment *vadjustment;
+  int i;
+
+  gtk_container_add (GTK_CONTAINER (scroller), listbox);
+  g_object_ref_sink (G_OBJECT (scroller));
+
+  vadjustment = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (scroller));
+
+  g_assert (gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (listbox)) == vadjustment);
+
+  // No viewport in between
+  g_assert (gtk_widget_get_parent (listbox) == scroller);
+  g_assert (GTK_IS_SCROLLABLE (listbox));
+
+  // Empty model
+  gtk_widget_measure (listbox, GTK_ORIENTATION_VERTICAL, -1, &min, &nat, NULL, NULL);
+  g_assert_cmpint (min, ==, 1); // XXX Widgets still have a min size of 1
+  g_assert_cmpint (nat, ==, 1);
+
+  gd_model_list_box_set_fill_func (GD_MODEL_LIST_BOX (listbox), label_from_label, NULL);
+  gd_model_list_box_set_model (GD_MODEL_LIST_BOX (listbox), G_LIST_MODEL (store));
+
+  g_message ("aaaaaaaa");
+
+  // First 1 small row
+    {
+      GtkWidget *w = gtk_label_new ("FOO!");
+      g_object_set_data (G_OBJECT (w), "height", GINT_TO_POINTER (ROW_HEIGHT));
+      g_list_store_append (store, w);
+    }
+
+  // Now 9 larger rows
+  for (i = 0; i < 9; i ++)
+    {
+      GtkWidget *w = gtk_label_new ("FOO!");
+      g_object_set_data (G_OBJECT (w), "height", GINT_TO_POINTER (ROW_HEIGHT * 5));
+      g_list_store_append (store, w);
+    }
+  g_message ("bbbbbbbbb");
+
+  g_assert (g_list_model_get_n_items (G_LIST_MODEL (store)) == 10);
+
+  gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
+
+  fake_alloc.x = 0;
+  fake_alloc.y = 0;
+  fake_alloc.width = MAX (min, 300);
+  fake_alloc.height = 500;
+  gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
+
+  // We have one small row on top and several larger ones below that.
+
+  // First, scroll the first row out of view so the current estimated list height is
+  // exclusively controled by the larger rows
+  gtk_adjustment_set_value (vadjustment, ROW_HEIGHT + 5);
+  gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
+
+  // Now, the estimated list size should be n * (5 * ROW_HEIGHT).
+  g_assert_cmpint ((int)gtk_adjustment_get_upper (vadjustment), ==, 10 * (5 * ROW_HEIGHT));
+
+  // Since we know the estimated size of the list is the above, the new value should be
+  // "one row missing plus 5 px".
+  // The listbox now assumes that every row is 500px high, as every existing row is.
+  g_assert_cmpint ((int)gtk_adjustment_get_value (vadjustment), ==, 505);
+
+  // SO! If we now scroll up and bring the old row into view again, what's gonna happen?
+  // Specifically, we scroll up by more than the first rows height + 5, causing the listbox
+  // to overscroll at the top.
+  //
+  // This SHOULD lead to a normal state... If the listbox is unable to repair its
+  // misestimation, the very first row will be allocated at a y > 0, which is wrong.
+  gtk_adjustment_set_value (vadjustment,
+                            gtk_adjustment_get_value (vadjustment) - (ROW_HEIGHT + 10));
+  gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
+  g_message ("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
+
+
+
+  g_object_unref (G_OBJECT (scroller));
+}
+
 int
 main (int argc, char **argv)
 {
@@ -380,6 +471,7 @@ main (int argc, char **argv)
   g_test_add_func ("/listbox/simple", simple);
   g_test_add_func ("/listbox/overscroll", overscroll);
   g_test_add_func ("/listbox/scrolling", scrolling);
+  /*g_test_add_func ("/listbox/overscroll_top", overscroll_top);*/
 
   return g_test_run ();
 }

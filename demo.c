@@ -122,7 +122,7 @@ remove_button_clicked_cb (GtkButton *source, gpointer user_data)
 }
 
 void
-remove_func (GtkWidget *widget, gpointer item)
+remove_func (GtkWidget *widget, gpointer item, gpointer user_data)
 {
   GdRowWidget *row = GD_ROW_WIDGET (widget);
 
@@ -155,8 +155,9 @@ fill_func (gpointer   item,
       row = GD_ROW_WIDGET (old_widget);
     }
 
-#if 1
-  if (item_index < N / 2)
+#if 0
+  /*if (item_index < N / 2)*/
+  if (item_index == 0)
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
   else
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 400);
@@ -204,7 +205,8 @@ scroll_cb (GtkWidget     *widget,
   if (val + 1.0 >= max_val)
     return G_SOURCE_REMOVE;
 
-  gtk_adjustment_set_value (a, val + 20.0);
+  gtk_adjustment_set_value (a, val + 1.0);
+  /*gtk_adjustment_set_value (a, val + 20.0);*/
 
   return G_SOURCE_CONTINUE;
 }
