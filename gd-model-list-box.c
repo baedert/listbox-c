@@ -289,6 +289,21 @@ ensure_visible_widgets (GdModelListBox *self)
   g_assert_cmpint (bin_height (self), >=, 0);
   double upper_before = estimated_list_height (self);
 
+  // XXX XXX XXX XXX XXX XXX XXX
+  // XXX XXX XXX XXX XXX XXX XXX
+  // XXX XXX XXX XXX XXX XXX XXX
+  //
+  // Current corner cases:
+  //   1) Scroll all the way down, then increase window height
+  //   2) Overscroll on top: Make the first row smaller, then scroll down so it's
+  //      not visible, then scroll up quickly.
+  //
+  // XXX XXX XXX XXX XXX XXX XXX
+  // XXX XXX XXX XXX XXX XXX XXX
+  // XXX XXX XXX XXX XXX XXX XXX
+
+
+
   /* This "out of sight" case happens when the new value is so different from the old one
    * that we rather just remove all widgets and adjust the model_from/model_to values.
    * This happens when scrolling fast, clicking the scrollbar directly or just by programmatically
