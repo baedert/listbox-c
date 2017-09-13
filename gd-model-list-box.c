@@ -103,6 +103,7 @@ requested_row_height (GdModelListBox *box,
   return min;
 }
 
+// TODO(Perf): This function is useless as we always use it in a loop in ensure_visible_widgets
 static inline int
 row_y (GdModelListBox *self,
        guint           index)
