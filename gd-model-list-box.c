@@ -233,8 +233,6 @@ configure_adjustment (GdModelListBox *self)
   cur_value     = gtk_adjustment_get_value (self->vadjustment);
   page_size     = gtk_adjustment_get_page_size (self->vadjustment);
 
-  /*g_message ("%s: Estimated list height: %d", __FUNCTION__, list_height);*/
-
   if ((int)cur_upper != list_height)
     {
       gtk_adjustment_set_upper (self->vadjustment, list_height);
@@ -253,9 +251,9 @@ configure_adjustment (GdModelListBox *self)
   max_value = MAX (0, list_height - widget_height);
   if (cur_value > max_value)
     {
-      g_message ("###############################################################");
+      g_message ("2 ###############################################################");
       set_vadjustment_value (self, max_value);
-      g_message ("###############################################################");
+      g_message ("2 ###############################################################");
     }
 }
 
@@ -276,15 +274,17 @@ ensure_visible_widgets (GdModelListBox *self)
       g_list_model_get_n_items (self->model) == 0)
     return;
 
-  g_message ("------------------------");
-  g_message ("     value: %f", gtk_adjustment_get_value (self->vadjustment));
-  g_message ("     upper: %f", gtk_adjustment_get_upper (self->vadjustment));
-  g_message ("     bin_y: %d", bin_y (self));
-  g_message ("bin_height: %d", bin_height (self));
-  g_message ("bin_y_diff: %f", self->bin_y_diff);
-
   // TODO: This should use the "content height"
   widget_height = gtk_widget_get_allocated_height (widget);
+
+  g_message ("------------------------");
+  g_message ("        value: %f", gtk_adjustment_get_value (self->vadjustment));
+  g_message ("        upper: %f", gtk_adjustment_get_upper (self->vadjustment));
+  g_message ("    page_size: %f", gtk_adjustment_get_page_size (self->vadjustment));
+  g_message ("widget height: %d", widget_height);
+  g_message ("        bin_y: %d", bin_y (self));
+  g_message ("   bin_height: %d", bin_height (self));
+  g_message ("   bin_y_diff: %f", self->bin_y_diff);
 
   g_assert_cmpint (self->bin_y_diff, >=, 0);
   g_assert_cmpint (bin_height (self), >=, 0);
@@ -302,7 +302,19 @@ ensure_visible_widgets (GdModelListBox *self)
   // XXX XXX XXX XXX XXX XXX XXX
   // XXX XXX XXX XXX XXX XXX XXX
 
-
+  double max_value = MAX (0, estimated_list_height (self) - widget_height);
+  if (gtk_adjustment_get_value (self->vadjustment) > max_value)
+    {
+      /* We do NOT use _set_adjustment_value here since that would adjust the bin_y_diff
+       * as well, which the later code will already to. */
+      g_message ("1 ###############################################################");
+      g_signal_handler_block (self->vadjustment,
+                              self->vadjustment_value_changed_id);
+      gtk_adjustment_set_value (self->vadjustment, max_value);
+      g_signal_handler_unblock (self->vadjustment,
+                                self->vadjustment_value_changed_id);
+      g_message ("1 ###############################################################");
+    }
 
   /* This "out of sight" case happens when the new value is so different from the old one
    * that we rather just remove all widgets and adjust the model_from/model_to values.
@@ -361,20 +373,21 @@ ensure_visible_widgets (GdModelListBox *self)
    *
    * This can happen when one scrolled to the bottom and then increased the widget height.
    */
-  g_message ("        bin_y: %d", bin_y (self));
-  g_message ("   bin_height: %d", bin_height (self));
-  g_message ("widget height: %d", widget_height);
   if (self->model_to == g_list_model_get_n_items (self->model) &&
       self->model_from > 0 &&
       bin_y (self) + bin_height (self) < widget_height)
     {
       g_message ("AT THE END");
+      g_message ("        bin_y: %d", bin_y (self));
+      g_message ("   bin_height: %d", bin_height (self));
+      g_message ("widget height: %d", widget_height);
+
       self->bin_y_diff += widget_height - (bin_y (self) + bin_height (self));
 
       g_message ("bin_y_diff now: %f", self->bin_y_diff);
-      g_message ("        bin_y:  %d", bin_y (self));
-      g_message ("   bin_height:  %d", bin_height (self));
-      g_message ("widget height:  %d", widget_height);
+      g_message ("         bin_y: %d", bin_y (self));
+      g_message ("    bin_height: %d", bin_height (self));
+      g_message (" widget height: %d", widget_height);
 
       g_assert (bin_y (self) + bin_height (self) >= widget_height);
     }
@@ -437,8 +450,8 @@ ensure_visible_widgets (GdModelListBox *self)
 
   /* Add top widgets */
   {
-    g_message ("adding on top. bin_y: %d, bin_y_diff: %f",
-               bin_y (self), self->bin_y_diff);
+    /*g_message ("adding on top. bin_y: %d, bin_y_diff: %f",*/
+               /*bin_y (self), self->bin_y_diff);*/
     for (;;)
       {
         GtkWidget *new_widget;
@@ -465,8 +478,8 @@ ensure_visible_widgets (GdModelListBox *self)
         top_added ++;
       }
 
-    g_message ("After adding on top. bin_y: %d, bin_y_diff: %f",
-               bin_y (self), self->bin_y_diff);
+    /*g_message ("After adding on top. bin_y: %d, bin_y_diff: %f",*/
+               /*bin_y (self), self->bin_y_diff);*/
   }
 
   /* Insert bottom widgets */

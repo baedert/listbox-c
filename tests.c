@@ -494,7 +494,7 @@ scroll_to_bottom_resize (void)
   for (i = 0; i < 10; i ++)
     {
       GtkWidget *w = gtk_label_new ("FOO!");
-      g_object_set_data (G_OBJECT (w), "height", GINT_TO_POINTER (ROW_HEIGHT * 5));
+      g_object_set_data (G_OBJECT (w), "height", GINT_TO_POINTER (ROW_HEIGHT));
       g_list_store_append (store, w);
     }
   g_message ("bbbbbbbbb");
@@ -522,6 +522,14 @@ scroll_to_bottom_resize (void)
   gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
   fake_alloc.height += 1;
   gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
+
+  // Now fuck it really up
+  while (fake_alloc.height < 2000)
+    {
+      gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
+      fake_alloc.height += 1;
+      gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
+    }
 
   g_object_unref (G_OBJECT (scroller));
 }
