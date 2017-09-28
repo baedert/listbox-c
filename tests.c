@@ -450,7 +450,8 @@ overscroll_top (void)
   // to overscroll at the top.
   //
   // This SHOULD lead to a normal state... If the listbox is unable to repair its
-  // misestimation, the very first row will be allocated at a y > 0, which is wrong.
+  // mis-estimation, the very first row will be allocated at a y > 0, which is wrong.
+  g_message ("NAO!");
   gtk_adjustment_set_value (vadjustment,
                             gtk_adjustment_get_value (vadjustment) - (ROW_HEIGHT + 10));
   gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
@@ -544,7 +545,7 @@ main (int argc, char **argv)
   g_test_add_func ("/listbox/overscroll", overscroll);
   g_test_add_func ("/listbox/scrolling", scrolling);
   g_test_add_func ("/listbox/scroll-to-bottom-resize", scroll_to_bottom_resize);
-  /*g_test_add_func ("/listbox/overscroll_top", overscroll_top);*/
+  g_test_add_func ("/listbox/overscroll_top", overscroll_top);
 
   return g_test_run ();
 }

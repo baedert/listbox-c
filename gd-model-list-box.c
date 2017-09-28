@@ -282,7 +282,7 @@ ensure_visible_widgets (GdModelListBox *self)
   g_message ("        upper: %f", gtk_adjustment_get_upper (self->vadjustment));
   g_message ("    page_size: %f", gtk_adjustment_get_page_size (self->vadjustment));
   g_message ("widget height: %d", widget_height);
-  g_message ("        bin_y: %d", bin_y (self));
+  g_message ("        bin_y: %d (SHOULD BE <= 0!)", bin_y (self));
   g_message ("   bin_height: %d", bin_height (self));
   g_message ("   bin_y_diff: %f", self->bin_y_diff);
 
@@ -367,6 +367,9 @@ ensure_visible_widgets (GdModelListBox *self)
     }
 
 
+  /* It might be necessary to get back here... */
+maybe_add_widgets:
+  g_message ("model_from: %u, model_to: %u", self->model_from, self->model_to);
   /* If we already show the last item, i.e. we are at the end of the list anyway,
    * BUT the last item is not allocated at the very bottom, we shift everything down here,
    * so the code later might add an item at the top.
@@ -377,19 +380,32 @@ ensure_visible_widgets (GdModelListBox *self)
       self->model_from > 0 &&
       bin_y (self) + bin_height (self) < widget_height)
     {
-      g_message ("AT THE END");
-      g_message ("        bin_y: %d", bin_y (self));
-      g_message ("   bin_height: %d", bin_height (self));
-      g_message ("widget height: %d", widget_height);
+      /*g_message ("AT THE END");*/
+      /*g_message ("        bin_y: %d", bin_y (self));*/
+      /*g_message ("   bin_height: %d", bin_height (self));*/
+      /*g_message ("widget height: %d", widget_height);*/
 
       self->bin_y_diff += widget_height - (bin_y (self) + bin_height (self));
 
-      g_message ("bin_y_diff now: %f", self->bin_y_diff);
-      g_message ("         bin_y: %d", bin_y (self));
-      g_message ("    bin_height: %d", bin_height (self));
-      g_message (" widget height: %d", widget_height);
+      /*g_message ("bin_y_diff now: %f", self->bin_y_diff);*/
+      /*g_message ("         bin_y: %d", bin_y (self));*/
+      /*g_message ("    bin_height: %d", bin_height (self));*/
+      /*g_message (" widget height: %d", widget_height);*/
 
       g_assert (bin_y (self) + bin_height (self) >= widget_height);
+    }
+  else if (self->model_from == 0 && bin_y (self) > 0)
+    {
+      /* We are at the very top of the list (item 0 is shown), but we
+       * allocate it at y > 0 because of a radical value/estimated-height change. */
+      g_message ("YEP!");
+      self->bin_y_diff = 0;
+      g_signal_handler_block (self->vadjustment,
+                              self->vadjustment_value_changed_id);
+      gtk_adjustment_set_value (self->vadjustment, 0);
+      g_signal_handler_unblock (self->vadjustment,
+                                self->vadjustment_value_changed_id);
+      g_message ("bin_y now: %d", bin_y (self));
     }
 
   /* Remove top widgets */
@@ -402,12 +418,13 @@ ensure_visible_widgets (GdModelListBox *self)
         int w_height = requested_row_height (self, w);
         if (bin_y (self) + row_y (self, i) + w_height < 0)
           {
+            g_message ("bin_y: %d, row_y: %d, w_height: %d", bin_y (self), row_y (self, i), w_height);
             g_assert_cmpint (i, ==, 0);
             self->bin_y_diff += w_height;
             remove_child_by_index (self, i);
             self->model_from ++;
             top_removed ++;
-            g_message ("Removing from top");
+            g_message ("Removing from top with index %u. bin_y_diff now: %f", i, self->bin_y_diff);
 
             /* Do the first row again */
             i--;
@@ -477,9 +494,12 @@ ensure_visible_widgets (GdModelListBox *self)
         self->bin_y_diff -= min;
         top_added ++;
       }
+    g_message ("After adding on top. bin_y: %d, bin_y_diff: %f",
+               bin_y (self), self->bin_y_diff);
 
-    /*g_message ("After adding on top. bin_y: %d, bin_y_diff: %f",*/
-               /*bin_y (self), self->bin_y_diff);*/
+    if (top_added > 0 && bin_y (self) > 0)
+      goto maybe_add_widgets;
+
   }
 
   /* Insert bottom widgets */

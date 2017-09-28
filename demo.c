@@ -155,7 +155,7 @@ fill_func (gpointer   item,
       row = GD_ROW_WIDGET (old_widget);
     }
 
-#if 0
+#if 1
   /*if (item_index < N / 2)*/
   if (item_index == 0)
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
