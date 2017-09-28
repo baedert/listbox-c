@@ -98,7 +98,7 @@ GtkSizeGroup *size_group2;
 
 GListModel *model;
 
-const guint N = 6;
+const guint N = 600000;
 
 
 static void
@@ -156,8 +156,8 @@ fill_func (gpointer   item,
     }
 
 #if 1
-  /*if (item_index < N / 2)*/
-  if (item_index == 0)
+  if (item_index < N / 2)
+  /*if (item_index == 0)*/
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
   else
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 400);
