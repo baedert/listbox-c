@@ -295,8 +295,7 @@ ensure_visible_widgets (GdModelListBox *self)
   // XXX XXX XXX XXX XXX XXX XXX
   //
   // Current corner cases:
-  //   1) Scroll all the way down, then increase window height
-  //   2) Overscroll on top: Make the first row smaller, then scroll down so it's
+  //   1) Overscroll on top: Make the first row smaller, then scroll down so it's
   //      not visible, then scroll up quickly.
   //
   // XXX XXX XXX XXX XXX XXX XXX
@@ -353,6 +352,31 @@ ensure_visible_widgets (GdModelListBox *self)
 
         g_message ("After OOS: model_from: %d, model_to: %d, bin_y: %d, bin_height; %d",
                    self->model_from, self->model_to, bin_y (self), bin_height (self));
+    }
+
+
+  /* If we already show the last item, i.e. we are at the end of the list anyway,
+   * BUT the last item is not allocated at the very bottom, we shift everything down here,
+   * so the code later might add an item at the top.
+   *
+   * This can happen when one scrolled to the bottom and then increased the widget height.
+   */
+  g_message ("        bin_y: %d", bin_y (self));
+  g_message ("   bin_height: %d", bin_height (self));
+  g_message ("widget height: %d", widget_height);
+  if (self->model_to == g_list_model_get_n_items (self->model) &&
+      self->model_from > 0 &&
+      bin_y (self) + bin_height (self) < widget_height)
+    {
+      g_message ("AT THE END");
+      self->bin_y_diff += widget_height - (bin_y (self) + bin_height (self));
+
+      g_message ("bin_y_diff now: %f", self->bin_y_diff);
+      g_message ("        bin_y:  %d", bin_y (self));
+      g_message ("   bin_height:  %d", bin_height (self));
+      g_message ("widget height:  %d", widget_height);
+
+      g_assert (bin_y (self) + bin_height (self) >= widget_height);
     }
 
   /* Remove top widgets */
@@ -518,6 +542,10 @@ ensure_visible_widgets (GdModelListBox *self)
 
   g_assert_cmpint (self->bin_y_diff, >=, 0);
   g_assert_cmpint (bin_y (self), <=, 0);
+
+  if (self->model_from > 0 && self->model_to == g_list_model_get_n_items (self->model))
+    g_assert (bin_y (self) + bin_height (self) >= widget_height);
+
 }
 
 static void

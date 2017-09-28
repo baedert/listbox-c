@@ -306,7 +306,7 @@ main (int argc, char **argv)
   gtk_widget_show (window);
   gtk_main ();
 
-  gtk_widget_destroy (window);
+  gtk_window_destroy (GTK_WINDOW (window));
 
   return 0;
 }
