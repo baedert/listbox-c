@@ -46,14 +46,14 @@ get_widget (GdModelListBox *self, guint index)
                                                 self->pool->len - 1);
 
   new_widget = self->fill_func (item, old_widget, index, self->fill_func_data);
+  g_assert (new_widget != NULL);
+  g_assert (GTK_IS_WIDGET (new_widget));
 
   if (old_widget != NULL)
     g_assert (old_widget == new_widget);
 
   if (g_object_is_floating (new_widget))
     g_object_ref_sink (new_widget);
-
-  g_assert (GTK_IS_WIDGET (new_widget));
 
   return new_widget;
 }
