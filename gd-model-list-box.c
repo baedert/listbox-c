@@ -42,7 +42,8 @@ get_widget (GdModelListBox *self, guint index)
   item = g_list_model_get_item (self->model, index);
 
   if (self->pool->len > 0)
-    old_widget = g_ptr_array_remove_index_fast (self->pool, 0);
+    old_widget = g_ptr_array_remove_index_fast (self->pool,
+                                                self->pool->len - 1);
 
   new_widget = self->fill_func (item, old_widget, index, self->fill_func_data);
 
