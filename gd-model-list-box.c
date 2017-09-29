@@ -33,7 +33,8 @@ enum {
 };
 
 static GtkWidget *
-get_widget (GdModelListBox *self, guint index)
+get_widget (GdModelListBox *self,
+            guint           index)
 {
   gpointer item;
   GtkWidget *old_widget = NULL;
@@ -261,7 +262,6 @@ configure_adjustment (GdModelListBox *self)
 static void
 ensure_visible_widgets (GdModelListBox *self)
 {
-  GtkWidget *widget = GTK_WIDGET (self);
   int widget_height;
   int bottom_removed = 0;
   int bottom_added = 0;
@@ -276,7 +276,7 @@ ensure_visible_widgets (GdModelListBox *self)
     return;
 
   // TODO: This should use the "content height"
-  widget_height = gtk_widget_get_allocated_height (widget);
+  widget_height = gtk_widget_get_allocated_height (GTK_WIDGET (self));
 
   g_debug ("------------------------");
   g_debug ("        value: %f", gtk_adjustment_get_value (self->vadjustment));
@@ -667,7 +667,8 @@ __size_allocate (GtkWidget           *widget,
 }
 
 static void
-__snapshot (GtkWidget *widget, GtkSnapshot *snapshot)
+__snapshot (GtkWidget   *widget,
+            GtkSnapshot *snapshot)
 {
   GdModelListBox *self = GD_MODEL_LIST_BOX (widget);
   GtkAllocation alloc;
@@ -809,6 +810,7 @@ __finalize (GObject *obj)
 
   g_clear_object (&self->hadjustment);
   g_clear_object (&self->vadjustment);
+  g_clear_object (&self->model);
 
   G_OBJECT_CLASS (gd_model_list_box_parent_class)->finalize (obj);
 }
@@ -843,6 +845,8 @@ void
 gd_model_list_box_set_model (GdModelListBox *self,
                              GListModel     *model)
 {
+  g_return_if_fail (GD_IS_MODEL_LIST_BOX (self));
+
   if (self->model != NULL)
     {
       g_signal_handlers_disconnect_by_func (self->model,
@@ -857,7 +861,6 @@ gd_model_list_box_set_model (GdModelListBox *self,
       g_object_ref (model);
     }
 
-  /*g_debug ("From %s", __FUNCTION__);*/
   ensure_visible_widgets (self);
 
   gtk_widget_queue_resize (GTK_WIDGET (self));

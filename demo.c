@@ -15,8 +15,8 @@ struct _GdData
 
 typedef struct _GdData GdData;
 
-G_DECLARE_FINAL_TYPE (GdData, gd_data, GD, DATA, GObject);
-G_DEFINE_TYPE (GdData, gd_data, G_TYPE_OBJECT);
+G_DECLARE_FINAL_TYPE (GdData, gd_data, GD, DATA, GObject)
+G_DEFINE_TYPE (GdData, gd_data, G_TYPE_OBJECT)
 #define GD_TYPE_DATA gd_data_get_type ()
 
 static void gd_data_init (GdData *d) {}
@@ -40,8 +40,8 @@ struct _GdRowWidget
 
 typedef struct _GdRowWidget GdRowWidget;
 
-G_DECLARE_FINAL_TYPE (GdRowWidget, gd_row_widget, GD, ROW_WIDGET, GtkBox);
-G_DEFINE_TYPE (GdRowWidget, gd_row_widget, GTK_TYPE_BOX);
+G_DECLARE_FINAL_TYPE (GdRowWidget, gd_row_widget, GD, ROW_WIDGET, GtkBox)
+G_DEFINE_TYPE (GdRowWidget, gd_row_widget, GTK_TYPE_BOX)
 #define GD_TYPE_ROW_WIDGET gd_row_widget_get_type ()
 #define GD_ROW_WIDGET(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GD_TYPE_ROW_WIDGET, GdRowWidget))
 
