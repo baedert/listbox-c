@@ -290,18 +290,6 @@ ensure_visible_widgets (GdModelListBox *self)
   g_assert_cmpint (bin_height (self), >=, 0);
   double upper_before = estimated_list_height (self);
 
-  // XXX XXX XXX XXX XXX XXX XXX
-  // XXX XXX XXX XXX XXX XXX XXX
-  // XXX XXX XXX XXX XXX XXX XXX
-  //
-  // Current corner cases:
-  //   1) Overscroll on top: Make the first row smaller, then scroll down so it's
-  //      not visible, then scroll up quickly.
-  //
-  // XXX XXX XXX XXX XXX XXX XXX
-  // XXX XXX XXX XXX XXX XXX XXX
-  // XXX XXX XXX XXX XXX XXX XXX
-
   double max_value = MAX (0, estimated_list_height (self) - widget_height);
   if (gtk_adjustment_get_value (self->vadjustment) > max_value)
     {
