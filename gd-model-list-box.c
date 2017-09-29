@@ -623,8 +623,8 @@ items_changed_cb (GListModel *model,
   self->model_to = self->model_from;
   self->bin_y_diff = 0;
 
-  /*g_message ("From %s", __FUNCTION__);*/
-  ensure_visible_widgets (self);
+  /* Will end up calling ensure_widgets */
+  gtk_widget_queue_allocate (GTK_WIDGET (self));
 }
 
 /* GtkWidget vfuncs {{{ */

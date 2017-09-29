@@ -155,7 +155,7 @@ fill_func (gpointer   item,
       row = GD_ROW_WIDGET (old_widget);
     }
 
-#if 1
+#if 0
   if (item_index < N / 2)
   /*if (item_index == 0)*/
     gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
@@ -306,7 +306,8 @@ main (int argc, char **argv)
   gtk_widget_show (window);
   gtk_main ();
 
-  gtk_window_destroy (GTK_WINDOW (window));
+  /*gtk_window_destroy (GTK_WINDOW (window));*/
+  gtk_widget_destroy (window);
 
   return 0;
 }
