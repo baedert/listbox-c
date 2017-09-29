@@ -69,7 +69,13 @@ simple (void)
   w = gtk_label_new ("Some Text");
   g_list_store_append (store, w);
   g_message ("---");
+  gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
+  fake_alloc.x = 0;
+  fake_alloc.y = 0;
+  fake_alloc.width = MAX (min, 300);
+  fake_alloc.height = 500;
 
+  gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
   /* We always request the minimum height */
   gtk_widget_measure (listbox, GTK_ORIENTATION_VERTICAL, -1, &min, &nat, NULL, NULL);
   g_assert_cmpint (min, ==, 1);
@@ -80,12 +86,6 @@ simple (void)
   g_assert_cmpint (min, ==, ROW_WIDTH);
   g_assert_cmpint (nat, ==, ROW_WIDTH);
 
-
-  gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
-  fake_alloc.x = 0;
-  fake_alloc.y = 0;
-  fake_alloc.width = MAX (min, 300);
-  fake_alloc.height = 500;
   gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
 
   /* 20 all in all */
@@ -95,6 +95,7 @@ simple (void)
       g_list_store_append (store, w);
     }
   gtk_widget_measure (listbox, GTK_ORIENTATION_HORIZONTAL, -1, &min, &nat, NULL, NULL);
+  gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
   g_assert_cmpint (min, ==, ROW_WIDTH);
   g_assert_cmpint (nat, ==, ROW_WIDTH);
 
