@@ -205,7 +205,7 @@ scroll_cb (GtkWidget     *widget,
   if (val + 1.0 >= max_val)
     return G_SOURCE_REMOVE;
 
-  gtk_adjustment_set_value (a, val + 1.0);
+  gtk_adjustment_set_value (a, val + 10.0);
   /*gtk_adjustment_set_value (a, val + 20.0);*/
 
   return G_SOURCE_CONTINUE;
