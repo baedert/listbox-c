@@ -204,14 +204,14 @@ set_vadjustment_value (GdModelListBox *self,
   int old_bin_y = bin_y (self);
   double cur_value = gtk_adjustment_get_value (self->vadjustment);
 
-  g_message ("%s: Adjusting value from %f to %f", __FUNCTION__, cur_value, new_value);
+  g_debug ("%s: Adjusting value from %f to %f", __FUNCTION__, cur_value, new_value);
   g_signal_handler_block (self->vadjustment,
                           self->vadjustment_value_changed_id);
   gtk_adjustment_set_value (self->vadjustment, new_value);
   g_signal_handler_unblock (self->vadjustment,
                             self->vadjustment_value_changed_id);
   g_assert_cmpint ((int)new_value, ==, (int)gtk_adjustment_get_value (self->vadjustment));
-  g_message ("bin_y_diff: %f, cur_value: %f, new_value: %f",
+  g_debug ("bin_y_diff: %f, cur_value: %f, new_value: %f",
              self->bin_y_diff, cur_value, new_value);
   self->bin_y_diff -= (cur_value - new_value);
   g_assert_cmpint (bin_y (self), ==, old_bin_y);
@@ -236,7 +236,7 @@ configure_adjustment (GdModelListBox *self)
   if ((int)cur_upper != list_height)
     {
       gtk_adjustment_set_upper (self->vadjustment, list_height);
-      g_message ("Changing upper from %f to %d", cur_upper, list_height);
+      g_debug ("Changing upper from %f to %d", cur_upper, list_height);
     }
   else if (list_height == 0)
     {
@@ -251,9 +251,9 @@ configure_adjustment (GdModelListBox *self)
   max_value = MAX (0, list_height - widget_height);
   if (cur_value > max_value)
     {
-      g_message ("2 ###############################################################");
+      g_debug ("2 ###############################################################");
       set_vadjustment_value (self, max_value);
-      g_message ("2 ###############################################################");
+      g_debug ("2 ###############################################################");
     }
 }
 
@@ -267,7 +267,7 @@ ensure_visible_widgets (GdModelListBox *self)
   int top_removed = 0;
   int top_added = 0;
 
-  g_message (__FUNCTION__);
+  g_debug (__FUNCTION__);
 
   if (!self->vadjustment ||
       !self->model ||
@@ -277,14 +277,14 @@ ensure_visible_widgets (GdModelListBox *self)
   // TODO: This should use the "content height"
   widget_height = gtk_widget_get_allocated_height (widget);
 
-  g_message ("------------------------");
-  g_message ("        value: %f", gtk_adjustment_get_value (self->vadjustment));
-  g_message ("        upper: %f", gtk_adjustment_get_upper (self->vadjustment));
-  g_message ("    page_size: %f", gtk_adjustment_get_page_size (self->vadjustment));
-  g_message ("widget height: %d", widget_height);
-  g_message ("        bin_y: %d (SHOULD BE <= 0!)", bin_y (self));
-  g_message ("   bin_height: %d", bin_height (self));
-  g_message ("   bin_y_diff: %f", self->bin_y_diff);
+  g_debug ("------------------------");
+  g_debug ("        value: %f", gtk_adjustment_get_value (self->vadjustment));
+  g_debug ("        upper: %f", gtk_adjustment_get_upper (self->vadjustment));
+  g_debug ("    page_size: %f", gtk_adjustment_get_page_size (self->vadjustment));
+  g_debug ("widget height: %d", widget_height);
+  g_debug ("        bin_y: %d (SHOULD BE <= 0!)", bin_y (self));
+  g_debug ("   bin_height: %d", bin_height (self));
+  g_debug ("   bin_y_diff: %f", self->bin_y_diff);
 
   g_assert_cmpint (self->bin_y_diff, >=, 0);
   g_assert_cmpint (bin_height (self), >=, 0);
@@ -307,13 +307,13 @@ ensure_visible_widgets (GdModelListBox *self)
     {
       /* We do NOT use _set_adjustment_value here since that would adjust the bin_y_diff
        * as well, which the later code will already to. */
-      g_message ("1 ###############################################################");
+      g_debug ("1 ###############################################################");
       g_signal_handler_block (self->vadjustment,
                               self->vadjustment_value_changed_id);
       gtk_adjustment_set_value (self->vadjustment, max_value);
       g_signal_handler_unblock (self->vadjustment,
                                 self->vadjustment_value_changed_id);
-      g_message ("1 ###############################################################");
+      g_debug ("1 ###############################################################");
     }
 
   /* This "out of sight" case happens when the new value is so different from the old one
@@ -332,9 +332,9 @@ ensure_visible_widgets (GdModelListBox *self)
       guint top_widget_index;
       int i;
 
-      g_message ("OUT OF SIGHT! bin_y: %d, bin_height; %d, widget_height: %d",
+      g_debug ("OUT OF SIGHT! bin_y: %d, bin_height; %d, widget_height: %d",
                  bin_y (self), bin_height (self), widget_height);
-      g_message ("Value: %f, upper: %f", value, upper);
+      g_debug ("Value: %f, upper: %f", value, upper);
 
       for (i = self->widgets->len - 1; i >= 0; i --)
         remove_child_by_index (self, i);
@@ -344,7 +344,7 @@ ensure_visible_widgets (GdModelListBox *self)
       percentage = value / (upper - page_size);
 
       top_widget_index = (guint) (g_list_model_get_n_items (self->model) * percentage);
-      g_message ("top_widget_index: %u (Percentage %f)", top_widget_index, percentage);
+      g_debug ("top_widget_index: %u (Percentage %f)", top_widget_index, percentage);
 
       if (top_widget_index > g_list_model_get_n_items (self->model))
         {
@@ -362,14 +362,14 @@ ensure_visible_widgets (GdModelListBox *self)
         g_assert (self->model_to <= g_list_model_get_n_items (self->model));
         g_assert (bin_y (self) <= widget_height);
 
-        g_message ("After OOS: model_from: %d, model_to: %d, bin_y: %d, bin_height; %d",
+        g_debug ("After OOS: model_from: %d, model_to: %d, bin_y: %d, bin_height; %d",
                    self->model_from, self->model_to, bin_y (self), bin_height (self));
     }
 
 
   /* It might be necessary to get back here... */
 maybe_add_widgets:
-  g_message ("model_from: %u, model_to: %u", self->model_from, self->model_to);
+  g_debug ("model_from: %u, model_to: %u", self->model_from, self->model_to);
   /* If we already show the last item, i.e. we are at the end of the list anyway,
    * BUT the last item is not allocated at the very bottom, we shift everything down here,
    * so the code later might add an item at the top.
@@ -380,17 +380,17 @@ maybe_add_widgets:
       self->model_from > 0 &&
       bin_y (self) + bin_height (self) < widget_height)
     {
-      /*g_message ("AT THE END");*/
-      /*g_message ("        bin_y: %d", bin_y (self));*/
-      /*g_message ("   bin_height: %d", bin_height (self));*/
-      /*g_message ("widget height: %d", widget_height);*/
+      /*g_debug ("AT THE END");*/
+      /*g_debug ("        bin_y: %d", bin_y (self));*/
+      /*g_debug ("   bin_height: %d", bin_height (self));*/
+      /*g_debug ("widget height: %d", widget_height);*/
 
       self->bin_y_diff += widget_height - (bin_y (self) + bin_height (self));
 
-      /*g_message ("bin_y_diff now: %f", self->bin_y_diff);*/
-      /*g_message ("         bin_y: %d", bin_y (self));*/
-      /*g_message ("    bin_height: %d", bin_height (self));*/
-      /*g_message (" widget height: %d", widget_height);*/
+      /*g_debug ("bin_y_diff now: %f", self->bin_y_diff);*/
+      /*g_debug ("         bin_y: %d", bin_y (self));*/
+      /*g_debug ("    bin_height: %d", bin_height (self));*/
+      /*g_debug (" widget height: %d", widget_height);*/
 
       g_assert (bin_y (self) + bin_height (self) >= widget_height);
     }
@@ -398,14 +398,14 @@ maybe_add_widgets:
     {
       /* We are at the very top of the list (item 0 is shown), but we
        * allocate it at y > 0 because of a radical value/estimated-height change. */
-      g_message ("YEP!");
+      g_debug ("YEP!");
       self->bin_y_diff = 0;
       g_signal_handler_block (self->vadjustment,
                               self->vadjustment_value_changed_id);
       gtk_adjustment_set_value (self->vadjustment, 0);
       g_signal_handler_unblock (self->vadjustment,
                                 self->vadjustment_value_changed_id);
-      g_message ("bin_y now: %d", bin_y (self));
+      g_debug ("bin_y now: %d", bin_y (self));
     }
 
   /* Remove top widgets */
@@ -418,13 +418,13 @@ maybe_add_widgets:
         int w_height = requested_row_height (self, w);
         if (bin_y (self) + row_y (self, i) + w_height < 0)
           {
-            g_message ("bin_y: %d, row_y: %d, w_height: %d", bin_y (self), row_y (self, i), w_height);
+            g_debug ("bin_y: %d, row_y: %d, w_height: %d", bin_y (self), row_y (self, i), w_height);
             g_assert_cmpint (i, ==, 0);
             self->bin_y_diff += w_height;
             remove_child_by_index (self, i);
             self->model_from ++;
             top_removed ++;
-            g_message ("Removing from top with index %u. bin_y_diff now: %f", i, self->bin_y_diff);
+            g_debug ("Removing from top with index %u. bin_y_diff now: %f", i, self->bin_y_diff);
 
             /* Do the first row again */
             i--;
@@ -452,7 +452,7 @@ maybe_add_widgets:
           {
             break;
           }
-        g_message ("Removing widget at bottom with y %d", y);
+        g_debug ("Removing widget at bottom with y %d", y);
 
         w = g_ptr_array_index (self->widgets, i);
         g_assert (w);
@@ -467,7 +467,7 @@ maybe_add_widgets:
 
   /* Add top widgets */
   {
-    /*g_message ("adding on top. bin_y: %d, bin_y_diff: %f",*/
+    /*g_debug ("adding on top. bin_y: %d, bin_y_diff: %f",*/
                /*bin_y (self), self->bin_y_diff);*/
     for (;;)
       {
@@ -486,7 +486,7 @@ maybe_add_widgets:
 
         self->model_from --;
 
-        g_message ("Adding on top for index %u", self->model_from);
+        g_debug ("Adding on top for index %u", self->model_from);
         new_widget = get_widget (self, self->model_from);
         g_assert (new_widget != NULL);
         insert_child_internal (self, new_widget, 0);
@@ -494,7 +494,7 @@ maybe_add_widgets:
         self->bin_y_diff -= min;
         top_added ++;
       }
-    g_message ("After adding on top. bin_y: %d, bin_y_diff: %f",
+    g_debug ("After adding on top. bin_y: %d, bin_y_diff: %f",
                bin_y (self), self->bin_y_diff);
 
     if (top_added > 0 && bin_y (self) > 0)
@@ -520,7 +520,7 @@ maybe_add_widgets:
             break;
           }
 
-        g_message ("Adding at bottom for model index %u. bin_y: %d, bin_height: %d", self->model_to,
+        g_debug ("Adding at bottom for model index %u. bin_y: %d, bin_height: %d", self->model_to,
                    bin_y (self), bin_height (self));
         new_widget = get_widget (self, self->model_to);
         insert_child_internal (self, new_widget, self->widgets->len);
@@ -530,10 +530,10 @@ maybe_add_widgets:
       }
   }
 
-  g_message ("Top removed:    %d", top_removed);
-  g_message ("Top added:      %d", top_added);
-  g_message ("Bottom removed: %d", bottom_removed);
-  g_message ("Bottom added:   %d", bottom_added);
+  g_debug ("Top removed:    %d", top_removed);
+  g_debug ("Top added:      %d", top_added);
+  g_debug ("Bottom removed: %d", bottom_removed);
+  g_debug ("Bottom added:   %d", bottom_added);
 
   if (top_removed    > 0) g_assert_cmpint (top_added,      ==, 0);
   if (top_added      > 0) g_assert_cmpint (top_removed,    ==, 0);
@@ -556,11 +556,11 @@ maybe_add_widgets:
   if (new_upper != (int)upper_before)
   /*if (value > new_upper - widget_height)*/
     {
-      g_message ("%d != %d", new_upper, (int)upper_before);
-       /*g_message ("%f > %f!", value, new_upper - widget_height);*/
-      g_message ("Value: %f, old upper: %f, new upper: %d, page_size: %d", value, upper_before, new_upper, widget_height);
-      g_message ("bin_y:      %d", bin_y (self));
-      g_message ("bin_y_diff: %f", self->bin_y_diff);
+      g_debug ("%d != %d", new_upper, (int)upper_before);
+       /*g_debug ("%f > %f!", value, new_upper - widget_height);*/
+      g_debug ("Value: %f, old upper: %f, new upper: %d, page_size: %d", value, upper_before, new_upper, widget_height);
+      g_debug ("bin_y:      %d", bin_y (self));
+      g_debug ("bin_y_diff: %f", self->bin_y_diff);
 
       int cur_bin_y = bin_y (self);
       int new_value = (self->model_from * estimated_row_height (self)) - cur_bin_y;
@@ -587,10 +587,10 @@ value_changed_cb (GtkAdjustment *adjustment,
 {
   GdModelListBox *self = user_data;
 
-  g_message ("%s: %f -> %f", __FUNCTION__, self->last_value, gtk_adjustment_get_value (adjustment));
+  g_debug ("%s: %f -> %f", __FUNCTION__, self->last_value, gtk_adjustment_get_value (adjustment));
 
   self->last_value = gtk_adjustment_get_value (adjustment);
-  g_message ("QUEUE ALLOCATE");
+  g_debug ("QUEUE ALLOCATE");
   /* ensure_visible_widgets will be called from size_allocate */
   g_assert (GTK_IS_WIDGET (user_data));
   gtk_widget_queue_allocate (user_data);
@@ -606,7 +606,7 @@ items_changed_cb (GListModel *model,
   GdModelListBox *self = user_data;
   int i;
 
-  g_message ("%s: position %d, removed: %u, added: %u", __FUNCTION__, position, removed, added);
+  g_debug ("%s: position %d, removed: %u, added: %u", __FUNCTION__, position, removed, added);
 
   /* If the change is out of our visible range anyway,
    * we don't care. */
@@ -639,8 +639,8 @@ __size_allocate (GtkWidget           *widget,
 
 
   int this_k = k++;
-  g_message (__FUNCTION__);
-  g_message ("Start %s(%d)", __FUNCTION__, this_k);
+  g_debug (__FUNCTION__);
+  g_debug ("Start %s(%d)", __FUNCTION__, this_k);
   ensure_visible_widgets (self);
 
   if (self->widgets->len > 0)
@@ -661,7 +661,7 @@ __size_allocate (GtkWidget           *widget,
                             &h, NULL, NULL, NULL);
         child_alloc.y = y;
         child_alloc.height = h;
-        g_message ("Allocation for row %u of %u: %d, %d, %d, %d",
+        g_debug ("Allocation for row %u of %u: %d, %d, %d, %d",
                    i, self->widgets->len,
                    child_alloc.x,
                    child_alloc.y,
@@ -674,7 +674,7 @@ __size_allocate (GtkWidget           *widget,
       /* configure_adjustment is being called from ensure_visible_widgets already */
     }
 
-  g_message ("End %s(%d)", __FUNCTION__, this_k);
+  g_debug ("End %s(%d)", __FUNCTION__, this_k);
 }
 
 static void
@@ -801,7 +801,7 @@ __finalize (GObject *obj)
   GdModelListBox *self = GD_MODEL_LIST_BOX (obj);
   guint i;
 
-  g_message ("LISTBOX FINALIZE. Pool: %u, widgets: %u", self->pool->len, self->widgets->len);
+  g_debug ("LISTBOX FINALIZE. Pool: %u, widgets: %u", self->pool->len, self->widgets->len);
 
   for (i = 0; i < self->pool->len; i ++)
     {
@@ -868,7 +868,7 @@ gd_model_list_box_set_model (GdModelListBox *self,
       g_object_ref (model);
     }
 
-  /*g_message ("From %s", __FUNCTION__);*/
+  /*g_debug ("From %s", __FUNCTION__);*/
   ensure_visible_widgets (self);
 
   gtk_widget_queue_resize (GTK_WIDGET (self));

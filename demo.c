@@ -114,9 +114,9 @@ remove_button_clicked_cb (GtkButton *source, gpointer user_data)
 {
   guint item_index = GPOINTER_TO_UINT (user_data);
 
-  g_message ("#####################################################");
+  g_debug ("#####################################################");
 
-  g_message ("Removing item at position %u", item_index);
+  g_debug ("Removing item at position %u", item_index);
 
   g_list_store_remove (G_LIST_STORE (model), item_index);
 }
@@ -186,9 +186,9 @@ set_focus_cb (GtkWindow *window,
               gpointer   user_data)
 {
   if (widget != NULL)
-    g_message ("New focus widget: %s %p", gtk_widget_get_name (widget), widget);
+    g_debug ("New focus widget: %s %p", gtk_widget_get_name (widget), widget);
   else
-    g_message ("New focus widget: (NULL) NULL");
+    g_debug ("New focus widget: (NULL) NULL");
 }
 
 static gboolean
@@ -231,7 +231,7 @@ to_bottom_button_clicked_cb (GtkButton *button,
   GtkScrolledWindow *scroller = user_data;
   GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment (scroller);
 
-  g_message ("######### DOWN CLICKED ########");
+  g_debug ("######### DOWN CLICKED ########");
   /* Obvious way of scrolling to the very bottom of a GtkAdjustment.
    * This case is interesting because doing so might change the upper
    * of the adjustment and the listbox has to compensate for that. */
@@ -246,7 +246,7 @@ to_top_button_clicked_cb (GtkButton *button,
   GtkScrolledWindow *scroller = user_data;
   GtkAdjustment *vadjustment = gtk_scrolled_window_get_vadjustment (scroller);
 
-  g_message ("################################### UP CLICKED");
+  g_debug ("################################### UP CLICKED");
   gtk_adjustment_set_value (vadjustment, 0);
 }
 
