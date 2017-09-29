@@ -1,5 +1,5 @@
-#ifndef _GD_MODEL_LIST_BOX_H
-#define _GD_MODEL_LIST_BOX_H
+#ifndef _GD_MODEL_LIST_BOX_H_
+#define _GD_MODEL_LIST_BOX_H_
 
 #include <gtk/gtk.h>
 
