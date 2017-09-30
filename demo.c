@@ -100,6 +100,11 @@ GListModel *model;
 
 const guint N = 600000;
 
+static const char *CSS =
+"row:hover {"
+"  background-color: grey;"
+"}"
+;
 
 static void
 switch_activated_cb (GtkSwitch *sw, GParamSpec *spec, gpointer user_data)
@@ -263,8 +268,15 @@ main (int argc, char **argv)
   GtkWidget *scroll_button = gtk_button_new_with_label ("Scroll");
   GtkWidget *to_bottom_button = gtk_button_new_with_label ("To Bottom");
   GtkWidget *to_top_button = gtk_button_new_with_label ("To Top");
+  GtkCssProvider *css_provider;
 
   g_signal_connect (window, "set-focus", G_CALLBACK (set_focus_cb), NULL);
+
+  css_provider = gtk_css_provider_new ();
+  gtk_css_provider_load_from_data (css_provider, CSS, -1);
+  gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
+                                             GTK_STYLE_PROVIDER (css_provider),
+                                             GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
   gtk_scrolled_window_set_overlay_scrolling (GTK_SCROLLED_WINDOW (scroller), FALSE);
