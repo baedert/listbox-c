@@ -28,6 +28,7 @@ struct _GdRowWidget
 {
   GtkBox parent_instance;
 
+  GtkWidget *image;
   GtkWidget *label1;
   GtkWidget *label2;
   GtkWidget *button;
@@ -53,6 +54,7 @@ static void gd_row_widget_init (GdRowWidget *d)
   gtk_widget_set_margin_start (GTK_WIDGET (d), 12);
   gtk_widget_set_margin_end (GTK_WIDGET (d), 12);
 
+  d->image = gtk_image_new ();
   d->label1 = gtk_label_new ("");
   d->label2 = gtk_label_new ("");
   d->button = gtk_button_new_with_label ("Click Me");
@@ -79,6 +81,7 @@ static void gd_row_widget_init (GdRowWidget *d)
   gtk_container_add (GTK_CONTAINER (d->stack), d->scale);
   gtk_container_add (GTK_CONTAINER (d->stack), d->entry);
 
+  gtk_container_add (GTK_CONTAINER (d), d->image);
   gtk_container_add (GTK_CONTAINER (d), d->label1);
   gtk_container_add (GTK_CONTAINER (d), d->label2);
   gtk_container_add (GTK_CONTAINER (d), d->button);
@@ -170,6 +173,7 @@ fill_func (gpointer   item,
   gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
 #endif
 
+  gtk_image_set_from_icon_name (GTK_IMAGE (row->image), "list-add-symbolic", GTK_ICON_SIZE_DIALOG);
   label = g_strdup_printf ("Row %'u of %'u", data->item_index + 1, data->model_size);
   gtk_label_set_label (GTK_LABEL (row->label1), label);
   gtk_label_set_markup (GTK_LABEL (row->label2), data->text);
