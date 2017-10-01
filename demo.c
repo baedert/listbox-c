@@ -102,7 +102,7 @@ const guint N = 600000;
 
 static const char *CSS =
 "row:hover {"
-"  background-color: grey;"
+"  background-color: alpha(grey, 0.2);"
 "}"
 ;
 
