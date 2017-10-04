@@ -68,7 +68,6 @@ simple (void)
 
   w = gtk_label_new ("Some Text");
   g_list_store_append (store, w);
-  g_message ("---");
   gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
   fake_alloc.x = 0;
   fake_alloc.y = 0;
@@ -403,8 +402,6 @@ overscroll_top (void)
   gd_model_list_box_set_fill_func (GD_MODEL_LIST_BOX (listbox), label_from_label, NULL);
   gd_model_list_box_set_model (GD_MODEL_LIST_BOX (listbox), G_LIST_MODEL (store));
 
-  g_message ("aaaaaaaa");
-
   // First 1 small row
     {
       GtkWidget *w = gtk_label_new ("FOO!");
@@ -419,8 +416,6 @@ overscroll_top (void)
       g_object_set_data (G_OBJECT (w), "height", GINT_TO_POINTER (ROW_HEIGHT * 5));
       g_list_store_append (store, w);
     }
-  g_message ("bbbbbbbbb");
-
   g_assert (g_list_model_get_n_items (G_LIST_MODEL (store)) == 10);
 
   gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
@@ -452,11 +447,9 @@ overscroll_top (void)
   //
   // This SHOULD lead to a normal state... If the listbox is unable to repair its
   // mis-estimation, the very first row will be allocated at a y > 0, which is wrong.
-  g_message ("NAO!");
   gtk_adjustment_set_value (vadjustment,
                             gtk_adjustment_get_value (vadjustment) - (ROW_HEIGHT + 10));
   gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
-  g_message ("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
   gtk_widget_size_allocate (scroller, &fake_alloc, -1, &fake_clip);
 
   g_object_unref (G_OBJECT (scroller));
@@ -499,8 +492,6 @@ scroll_to_bottom_resize (void)
       g_object_set_data (G_OBJECT (w), "height", GINT_TO_POINTER (ROW_HEIGHT));
       g_list_store_append (store, w);
     }
-  g_message ("bbbbbbbbb");
-
   g_assert (g_list_model_get_n_items (G_LIST_MODEL (store)) == 10);
 
   gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
@@ -573,8 +564,6 @@ model_change (void)
       g_object_set_data (G_OBJECT (w), "height", GINT_TO_POINTER (ROW_HEIGHT));
       g_list_store_append (store, w);
     }
-  g_message ("bbbbbbbbb");
-
   g_assert (g_list_model_get_n_items (G_LIST_MODEL (store)) == 10);
 
   gtk_widget_measure (scroller, GTK_ORIENTATION_HORIZONTAL, -1, &min, NULL, NULL, NULL);
