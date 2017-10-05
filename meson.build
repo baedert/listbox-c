@@ -26,6 +26,15 @@ executable(
 )
 
 
+executable(
+  'imagelist',
+  sources: 'imagelist.c',
+  dependencies: [gtk_dep, listbox_dep],
+  c_args: [
+    '-Werror=implicit-function-declaration'
+  ]
+)
+
 
 test_exec = executable(
   'tests',
