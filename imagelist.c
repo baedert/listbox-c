@@ -97,6 +97,7 @@ icon_loaded_cb (GObject      *source_object,
   struct {
     GdData *item;
     GdRowWidget *row;
+    GInputStream *stream;
   } *load_data = user_data;
 
   icon = gdk_pixbuf_new_from_stream_finish (result, NULL);
@@ -110,6 +111,7 @@ icon_loaded_cb (GObject      *source_object,
 cleanup:
   g_clear_object (&load_data->item->cancellable);
   g_free (load_data);
+  g_input_stream_close (load_data->stream, NULL, NULL);
 }
 
 static GtkWidget *
@@ -120,11 +122,11 @@ fill_func (gpointer   item,
 {
   GdRowWidget *row;
   GdData *data = item;
-  GInputStream *stream;
   GFile *file;
   struct {
     GdData *item;
     GdRowWidget *row;
+    GInputStream *stream;
   } *load_data;
 
   if (G_UNLIKELY (!old_widget))
@@ -136,17 +138,18 @@ fill_func (gpointer   item,
 
   /// XXX LEAKAGE
   file = g_file_new_for_path (data->image_path);
-  stream = (GInputStream *)g_file_read (file, NULL, NULL);
   g_clear_object (&data->cancellable);
   data->cancellable = g_cancellable_new ();
   load_data = g_malloc (sizeof (*load_data));
   load_data->item = data;
   load_data->row = row;
-  gdk_pixbuf_new_from_stream_at_scale_async (stream,
+  load_data->stream = (GInputStream *)g_file_read (file, NULL, NULL);
+  gdk_pixbuf_new_from_stream_at_scale_async (load_data->stream,
                                              ICON_SIZE, ICON_SIZE, TRUE,
                                              data->cancellable,
                                              icon_loaded_cb,
                                              load_data);
+
 
   return GTK_WIDGET (row);
 }
