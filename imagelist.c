@@ -221,6 +221,7 @@ main (int argc, char **argv)
   GtkWidget *to_top_button = gtk_button_new_with_label ("To Top");
   GtkCssProvider *css_provider;
   GFile *image_folder;
+  const int N = 1000;
 
   css_provider = gtk_css_provider_new ();
   gtk_css_provider_load_from_data (css_provider, CSS, -1);
@@ -245,6 +246,23 @@ main (int argc, char **argv)
         }
     }
 
+  // We duplicate all items once we have them in memory...
+  const int k = g_list_model_get_n_items (model);
+  for (int m = 0; m < N; m ++)
+    {
+      for (int i = 0; i < k; i ++)
+        {
+          GdData *new_item = g_object_new (GD_TYPE_DATA, NULL);
+          GdData *old_item = (GdData *)g_list_model_get_object (model, i);
+
+          new_item->image_path = g_strdup (old_item->image_path);
+
+          g_list_store_append (G_LIST_STORE (model), new_item);
+
+          g_object_unref (old_item);
+        }
+    }
+
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
   gtk_scrolled_window_set_overlay_scrolling (GTK_SCROLLED_WINDOW (scroller), FALSE);
 
@@ -265,6 +283,9 @@ main (int argc, char **argv)
   g_signal_connect (to_top_button, "clicked", G_CALLBACK (to_top_button_clicked_cb), scroller);
   gtk_container_add (GTK_CONTAINER (headerbar), to_top_button);
 
+  char *title = g_strdup_printf ("%u items", g_list_model_get_n_items (model));
+  gtk_header_bar_set_title (GTK_HEADER_BAR (headerbar), title);
+  g_free (title);
 
   g_signal_connect (G_OBJECT (window), "delete-event", G_CALLBACK (gtk_main_quit), NULL);
 
