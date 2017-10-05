@@ -2,19 +2,24 @@ project('listbox-c', 'c')
 
 gtk_dep = dependency('gtk+-4.0')
 
+srcdir = include_directories('src/')
 
-demo_sources = files(
-  'src/gd-model-list-box.c',
-  'demo.c',
+liblistbox = library(
+  'listbox',
+  ['src/gd-model-list-box.c'],
+  include_directories: srcdir,
+  dependencies: gtk_dep,
 )
 
-srcdir = include_directories('src/')
+listbox_dep = declare_dependency(
+  link_with: liblistbox,
+  include_directories: srcdir,
+)
 
 executable(
   'demo',
-  sources: demo_sources,
-  dependencies: [gtk_dep],
-  include_directories: srcdir,
+  sources: 'demo.c',
+  dependencies: [gtk_dep, listbox_dep],
   c_args: [
     '-Werror=implicit-function-declaration'
   ]
@@ -24,8 +29,7 @@ executable(
 
 test_exec = executable(
   'tests',
-  ['tests.c', 'src/gd-model-list-box.c'],
-  include_directories: srcdir,
-  dependencies: [gtk_dep]
+  ['tests.c'],
+  dependencies: [gtk_dep, listbox_dep]
 )
 test('main', test_exec)
