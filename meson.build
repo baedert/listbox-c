@@ -1,7 +1,6 @@
 project('listbox-c', 'c')
 
 gtk_dep = dependency('gtk+-4.0')
-sysprof_dep = dependency('sysprof-2')
 
 
 demo_sources = files(
@@ -14,7 +13,7 @@ srcdir = include_directories('src/')
 executable(
   'demo',
   sources: demo_sources,
-  dependencies: [gtk_dep, sysprof_dep],
+  dependencies: [gtk_dep],
   include_directories: srcdir,
   c_args: [
     '-Werror=implicit-function-declaration'
