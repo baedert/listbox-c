@@ -161,7 +161,7 @@ scroll_cb (GtkWidget     *widget,
            gpointer       user_data)
 {
   GtkAdjustment *a = user_data;
-  const double increase = 10.0;
+  const double increase = 50.0;
   double val = gtk_adjustment_get_value (a);
   double max_val;
 
