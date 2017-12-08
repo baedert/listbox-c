@@ -79,6 +79,8 @@ remove_child_by_index (GdModelListBox *self,
 
   row = g_ptr_array_index (self->widgets, index);
 
+  gtk_widget_set_child_visible (g_ptr_array_index (self->widgets, index), FALSE);
+
   if (self->remove_func)
     {
       guint item_index = self->model_from + index;
@@ -87,7 +89,6 @@ remove_child_by_index (GdModelListBox *self,
                          self->remove_func_data);
     }
 
-  gtk_widget_set_child_visible (g_ptr_array_index (self->widgets, index), FALSE);
   /* Can't use _fast for self->widgets, we need to keep the order. */
   g_ptr_array_remove_index (self->widgets, index);
   g_ptr_array_add (self->pool, row);

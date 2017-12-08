@@ -62,7 +62,7 @@ static void gd_row_widget_init (GdRowWidget *d)
   d->entry = gtk_entry_new ();
   d->scale = gtk_scale_new (GTK_ORIENTATION_HORIZONTAL, NULL);
   d->stack = gtk_stack_new ();
-  d->remove_button = gtk_button_new_from_icon_name ("list-remove-symbolic", GTK_ICON_SIZE_BUTTON);
+  d->remove_button = gtk_button_new_from_icon_name ("list-remove-symbolic");
 
   /*gtk_label_set_line_wrap (GTK_LABEL (d->label2), TRUE);*/
   gtk_label_set_ellipsize (GTK_LABEL (d->label2), PANGO_ELLIPSIZE_END);
@@ -173,7 +173,7 @@ fill_func (gpointer   item,
   gtk_widget_set_size_request (GTK_WIDGET (row), -1, 100);
 #endif
 
-  gtk_image_set_from_icon_name (GTK_IMAGE (row->image), "list-add-symbolic", GTK_ICON_SIZE_DIALOG);
+  gtk_image_set_from_icon_name (GTK_IMAGE (row->image), "list-add-symbolic");
   label = g_strdup_printf ("Row %'u of %'u", data->item_index + 1, data->model_size);
   gtk_label_set_label (GTK_LABEL (row->label1), label);
   gtk_label_set_markup (GTK_LABEL (row->label2), data->text);
@@ -278,9 +278,9 @@ main (int argc, char **argv)
 
   css_provider = gtk_css_provider_new ();
   gtk_css_provider_load_from_data (css_provider, CSS, -1);
-  gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
-                                             GTK_STYLE_PROVIDER (css_provider),
-                                             GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  gtk_style_context_add_provider_for_display (gdk_display_get_default (),
+                                              GTK_STYLE_PROVIDER (css_provider),
+                                              GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroller), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
   gtk_scrolled_window_set_overlay_scrolling (GTK_SCROLLED_WINDOW (scroller), FALSE);
