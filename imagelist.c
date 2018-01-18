@@ -277,7 +277,7 @@ main (int argc, char **argv)
   gtk_container_add (GTK_CONTAINER (scroller), list);
   gtk_container_add (GTK_CONTAINER (window), scroller);
 
-  gtk_header_bar_set_show_close_button (GTK_HEADER_BAR (headerbar), TRUE);
+  gtk_header_bar_set_show_title_buttons (GTK_HEADER_BAR (headerbar), TRUE);
   gtk_window_set_titlebar (GTK_WINDOW (window), headerbar);
   g_signal_connect (scroll_button, "clicked", G_CALLBACK (scroll_button_clicked_cb), scroller);
   gtk_container_add (GTK_CONTAINER (headerbar), scroll_button);
@@ -290,7 +290,7 @@ main (int argc, char **argv)
   gtk_header_bar_set_title (GTK_HEADER_BAR (headerbar), title);
   g_free (title);
 
-  g_signal_connect (G_OBJECT (window), "delete-event", G_CALLBACK (gtk_main_quit), NULL);
+  g_signal_connect (G_OBJECT (window), "close-request", G_CALLBACK (gtk_main_quit), NULL);
 
   gtk_window_resize (GTK_WINDOW (window), 700, 400);
   gtk_widget_show (window);
